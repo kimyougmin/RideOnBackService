@@ -38,7 +38,16 @@ dependencies {
 	// swagger
 	implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.3.0'
 
+	// prometheus
+	implementation 'io.micrometer:micrometer-registry-prometheus'
+
+	// Prometheus 수동 푸시 추가
+	implementation 'io.prometheus:simpleclient:0.16.0'
+	implementation 'io.prometheus:simpleclient_pushgateway:0.16.0'
+	implementation 'io.prometheus:simpleclient_hotspot:0.16.0'
+
 	compileOnly 'org.projectlombok:lombok'
+	implementation 'org.springframework:scheduling'
 	developmentOnly 'org.springframework.boot:spring-boot-devtools'
 	runtimeOnly 'org.postgresql:postgresql'
 	annotationProcessor 'org.projectlombok:lombok'

@@ -20,6 +20,15 @@ spring:
         user:
             name: admin
             password: admin123
+    management:
+        endpoints:
+            web:
+                exposure:
+                    include: health,info,prometheus
+        metrics:
+            export:
+                prometheus:
+                    enabled: true
     logging:
         level:
             org.springframework.boot.autoconfigure.security: DEBUG
