@@ -24,7 +24,7 @@ spring:
         endpoints:
             web:
                 exposure:
-                    include: health,info,prometheus
+                    include: "*"
         metrics:
             export:
                 prometheus:
