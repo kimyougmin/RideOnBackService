@@ -6,6 +6,7 @@ import io.prometheus.client.Gauge;
 import io.prometheus.client.exporter.PushGateway;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
+import org.springframework.beans.factory.annotation.Qualifier;
 
 import java.io.IOException;
 
@@ -13,14 +14,15 @@ import java.io.IOException;
 public class MetricsPushService {
 
     private final UserStatsService statsService;
-    private final CollectorRegistry registry;
+    private final CollectorRegistry collectorRegistry;
 
     private final Gauge dauGauge;
     private final Gauge mauGauge;
 
-    public MetricsPushService(UserStatsService statsService, CollectorRegistry registry) {
+    public MetricsPushService(UserStatsService statsService,
+                              @Qualifier("customCollectorRegistry") CollectorRegistry registry) {
         this.statsService = statsService;
-        this.registry = registry;
+        this.collectorRegistry = registry;
 
         dauGauge = Gauge.build()
                 .name("rideon_dau")
@@ -40,8 +42,8 @@ public class MetricsPushService {
 
         try {
             PushGateway pushGateway = new PushGateway("localhost:9091");
-            pushGateway.pushAdd(registry, "rideon_usage");
-            System.out.println("✅ Metrics pushed to PushGateway");
+            pushGateway.pushAdd(collectorRegistry, "rideon_usage");
+            System.out.println("Metrics pushed to PushGateway");
         } catch (IOException e) {
             e.printStackTrace();
         }
