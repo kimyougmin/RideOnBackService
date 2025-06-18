@@ -48,4 +48,8 @@ public class MetricsPushService {
             e.printStackTrace();
         }
     }
+    // Dypendency Injection
+    // Spring Bean
+    // RideOnApplication ->
+
 }
