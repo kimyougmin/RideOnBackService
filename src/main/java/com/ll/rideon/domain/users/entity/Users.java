@@ -1,17 +1,10 @@
-package com.ll.rideon.domain.member.entity;
+package com.ll.rideon.domain.users.entity;
 import java.time.LocalDateTime;
-import java.util.UUID;
 
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
-import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.util.ObjectUtils;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.ll.rideon.domain.member.dto.request.PasswordUpdateRequest;
-
-import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EntityListeners;
@@ -35,7 +28,7 @@ import lombok.Setter;
 @NoArgsConstructor
 @AllArgsConstructor
 @EntityListeners(AuditingEntityListener.class)
-public class User {
+public class Users {
     /**
      * 유저 고유 ID
      */
@@ -100,28 +93,5 @@ public class User {
     @Column(name = "unique_key", nullable = false, updatable = false, unique = true)
     private String uniqueKey;
 
-
-    /**
-     * 유저의 전화번호를 설정하는 메서드
-     * @param phone 전화번호
-     */
-    public void activatePhone(String phone) {
-        this.phone = phone;
-    }
-
-    public static User updatePassword(User user, PasswordUpdateRequest request, PasswordEncoder passwordEncoder) {
-        return User.builder()
-                .id(user.getId())
-                .email(user.getEmail())
-                .password(passwordEncoder.encode(request.getNewPassword()))
-                .name(user.getName())
-                .profileImage(user.getProfileImage())
-                .phone(user.getPhone())
-                .userId(user.getUserId())
-                .uniqueKey(user.getUniqueKey())
-                .createdAt(user.getCreatedAt())
-                .updatedAt(LocalDateTime.now())
-                .build();
-    }
 
 }

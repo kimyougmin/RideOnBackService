@@ -32,3 +32,6 @@ spring:
     logging:
         level:
             org.springframework.boot.autoconfigure.security: DEBUG
+jwt:
+    secret: ${JWT_KEY}
+    expiration: 36000000  # 10 hour
