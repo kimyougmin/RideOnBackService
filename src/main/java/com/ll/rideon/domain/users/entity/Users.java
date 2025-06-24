@@ -1,16 +1,11 @@
 package com.ll.rideon.domain.users.entity;
 import java.time.LocalDateTime;
 
+import jakarta.persistence.*;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.EntityListeners;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
 import jakarta.validation.constraints.Email;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
@@ -20,10 +15,11 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 /**
- * Member 엔티티
+ * users 엔티티
  */
+@Table(name = "users")
 @Entity
-@Getter
+@Getter @Setter
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
@@ -56,6 +52,17 @@ public class Users {
     private String name;
 
     /**
+     * 성별
+     */
+    private String gender;
+
+    /**
+     * 출생년도
+     */
+    @Column(name = "birth_date")
+    private String birthDate;
+
+    /**
      * 전화번호
      */
     private String phone;
@@ -84,14 +91,7 @@ public class Users {
      * 유저 소셜 ID
      */
     @Setter(AccessLevel.PRIVATE)
-    @Column(name = "user_id", nullable = false)
+    @Column(name = "user_id", nullable = false, unique = true)
     private String userId;
-
-    /**
-     * 사용자 고유 번호
-     */
-    @Column(name = "unique_key", nullable = false, updatable = false, unique = true)
-    private String uniqueKey;
-
 
 }

@@ -11,6 +11,10 @@ import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import java.sql.Time;
+import java.time.LocalDateTime;
+import java.util.UUID;
+
 @Service
 @RequiredArgsConstructor
 public class UserService {
@@ -31,6 +35,11 @@ public class UserService {
                 .email(dto.getEmail())
                 .password(passwordEncoder.encode(dto.getPassword()))
                 .name(dto.getName())
+                .gender(dto.getGender())
+                .phone(dto.getPhone())
+                .birthDate(dto.getBirthDate())
+                .userId(UUID.randomUUID().toString())
+                .createdAt(LocalDateTime.now())
                 .build();
 
         userRepository.save(users);
