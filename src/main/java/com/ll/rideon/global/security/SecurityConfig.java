@@ -20,6 +20,9 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import org.springframework.web.cors.CorsConfigurationSource;
+import com.ll.rideon.global.security.oauth2.handler.OAuth2LoginFailureHandler;
+import com.ll.rideon.global.security.oauth2.handler.OAuth2LoginSuccessHandler;
+import com.ll.rideon.global.security.oauth2.service.CustomOAuth2UserService;
 
 import java.util.Arrays;
 import java.util.HashMap;
@@ -30,7 +33,11 @@ import java.util.Map;
 @EnableWebSecurity
 @RequiredArgsConstructor
 public class SecurityConfig {
+
     private static final Map<HttpMethod, List<String>> PUBLIC_URLS = new HashMap<>();
+    private final CustomOAuth2UserService customOAuth2UserService;
+    private final OAuth2LoginSuccessHandler oAuth2LoginSuccessHandler;
+    private final OAuth2LoginFailureHandler oAuth2LoginFailureHandler;
 
     public static Map<HttpMethod, List<String>> getPublicUrls() {
         return PUBLIC_URLS;
@@ -72,7 +79,13 @@ public class SecurityConfig {
                         ).permitAll()
                         .anyRequest().authenticated()
                 )
-                .addFilterBefore(new JwtAuthenticationFilter(jwtTokenProvider), UsernamePasswordAuthenticationFilter.class);
+                .addFilterBefore(new JwtAuthenticationFilter(jwtTokenProvider), UsernamePasswordAuthenticationFilter.class)
+                .oauth2Login(oauth2 -> oauth2
+                        .userInfoEndpoint(userInfo -> userInfo
+                                .userService(customOAuth2UserService))
+                        .successHandler(oAuth2LoginSuccessHandler)
+                        .failureHandler(oAuth2LoginFailureHandler))
+                .authenticationProvider(authenticationProvider());
 
         return http.build();
     }
