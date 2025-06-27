@@ -1,5 +1,8 @@
 package com.ll.rideon.global.security;
 
+import com.ll.rideon.global.security.custom.CustomUserDetailsService;
+import com.ll.rideon.global.security.jwt.JwtAuthenticationFilter;
+import com.ll.rideon.global.security.jwt.JwtTokenProvider;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -59,6 +62,7 @@ public class SecurityConfig {
                 .authorizeHttpRequests(authz -> authz
                         .requestMatchers(
                                 "/**",
+                                "/api/oauth2/**",
                                 "/api/auth/**",       // 예: /api/auth/login 등 인증 관련 경로
                                 "/api/users/**",
                                 "/swagger-ui/**",

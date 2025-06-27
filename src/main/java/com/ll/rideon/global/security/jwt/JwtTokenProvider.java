@@ -1,6 +1,7 @@
-package com.ll.rideon.global.security;
+package com.ll.rideon.global.security.jwt;
 
 
+import com.ll.rideon.global.security.custom.CustomUserDetailsService;
 import io.jsonwebtoken.*;
 import io.jsonwebtoken.security.Keys;
 import jakarta.annotation.PostConstruct;

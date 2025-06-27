@@ -1,20 +1,21 @@
 package com.ll.rideon.domain.users.service;
 
-import com.ll.rideon.domain.users.dto.UserLoginRequestDto;
-import com.ll.rideon.domain.users.dto.UserRegisterDto;
+import com.ll.rideon.domain.users.dto.*;
 import com.ll.rideon.domain.users.entity.Users;
 import com.ll.rideon.domain.users.repository.UserRepository;
-import com.ll.rideon.global.security.JwtTokenProvider;
+import com.ll.rideon.global.security.jwt.JwtTokenProvider;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.RestTemplate;
 
-import java.sql.Time;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class UserService {
@@ -22,6 +23,7 @@ public class UserService {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtTokenProvider jwtTokenProvider;
+    private final RestTemplate restTemplate = new RestTemplate();
 
     /**
      * 회원가입 처리
@@ -44,7 +46,6 @@ public class UserService {
 
         userRepository.save(users);
     }
-
     /**
      * 로그인 처리 및 JWT 토큰 반환
      */

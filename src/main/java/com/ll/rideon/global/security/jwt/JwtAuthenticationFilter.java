@@ -1,4 +1,4 @@
-package com.ll.rideon.global.security;
+package com.ll.rideon.global.security.jwt;
 
 
 import jakarta.servlet.FilterChain;

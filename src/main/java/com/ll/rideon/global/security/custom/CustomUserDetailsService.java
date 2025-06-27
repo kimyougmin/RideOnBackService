@@ -1,4 +1,4 @@
-package com.ll.rideon.global.security;
+package com.ll.rideon.global.security.custom;
 
 import com.ll.rideon.domain.users.entity.Users;
 import com.ll.rideon.domain.users.repository.UserRepository;
