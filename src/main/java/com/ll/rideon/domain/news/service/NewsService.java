@@ -32,7 +32,7 @@ public class NewsService {
         try {
             URI uri = UriComponentsBuilder.fromHttpUrl(NAVER_NEWS_API)
                     .queryParam("query", "자전거")
-                    .queryParam("display", 10)
+                    .queryParam("display", 6)
                     .queryParam("start", 1)
                     .queryParam("sort", sort)  // "date" or "sim"
                     .build().toUri();
