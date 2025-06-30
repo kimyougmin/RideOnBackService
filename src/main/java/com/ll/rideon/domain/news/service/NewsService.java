@@ -13,6 +13,7 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 @Service
@@ -33,7 +34,7 @@ public class NewsService {
                     .queryParam("query", "자전거")
                     .queryParam("display", 10)
                     .queryParam("start", 1)
-                    .queryParam("sort", sort)  // date or sim
+                    .queryParam("sort", sort)  // "date" or "sim"
                     .build().toUri();
 
             HttpRequest request = HttpRequest.newBuilder()
@@ -47,16 +48,22 @@ public class NewsService {
             HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
 
             ObjectMapper mapper = new ObjectMapper();
-            JsonNode items = mapper.readTree(response.body()).get("items");
+            JsonNode root = mapper.readTree(response.body());
+
+            JsonNode items = root.get("items");
+            if (items == null || !items.isArray()) {
+                System.err.println("items가 null이거나 배열이 아님: " + root.toPrettyString());
+                return Collections.emptyList();
+            }
 
             List<NewsResponseDto> result = new ArrayList<>();
             for (JsonNode item : items) {
                 result.add(NewsResponseDto.builder()
-                        .title(item.get("title").asText())
-                        .originallink(item.get("originallink").asText())
-                        .link(item.get("link").asText())
-                        .description(item.get("description").asText())
-                        .pubDate(item.get("pubDate").asText())
+                        .title(item.get("title").asText(""))
+                        .originallink(item.get("originallink").asText(""))
+                        .link(item.get("link").asText(""))
+                        .description(item.get("description").asText(""))
+                        .pubDate(item.get("pubDate").asText(""))
                         .build());
             }
 
@@ -64,7 +71,7 @@ public class NewsService {
 
         } catch (Exception e) {
             e.printStackTrace();
-            return List.of();
+            return Collections.emptyList();
         }
     }
 }
