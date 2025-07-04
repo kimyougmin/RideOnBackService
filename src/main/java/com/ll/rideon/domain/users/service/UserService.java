@@ -49,7 +49,7 @@ public class UserService {
     /**
      * 로그인 처리 및 JWT 토큰 반환
      */
-    public String login(UserLoginRequestDto dto) {
+    public UserLoginResponseDto login(UserLoginRequestDto dto) {
         Users users = userRepository.findByEmail(dto.getEmail())
                 .orElseThrow(() -> new UsernameNotFoundException("이메일이 존재하지 않습니다."));
 
@@ -57,6 +57,14 @@ public class UserService {
             throw new BadCredentialsException("비밀번호가 일치하지 않습니다.");
         }
 
-        return jwtTokenProvider.createToken(users.getEmail(), users.getId());
+        String token = jwtTokenProvider.createToken(users.getEmail(), users.getId());
+
+        return UserLoginResponseDto.builder()
+                .token(token)
+                .email(users.getEmail())
+                .name(users.getName())
+                .profileImage(users.getProfileImage())
+                .phone(users.getPhone())
+                .build();
     }
 }
