@@ -12,6 +12,9 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.HashMap;
+import java.util.Map;
+
 
 @Tag(name = "유저 인증", description = "로그인 및 회원가입 관련 API")
 @RestController
@@ -27,7 +30,9 @@ public class UserController {
     @PostMapping("/register")
     public ResponseEntity<?> register(@RequestBody UserRegisterDto dto) {
         userService.register(dto);
-        return ResponseEntity.ok("회원가입 성공");
+        Map<String, String> response = new HashMap<>();
+        response.put("res", "회원가입 성공");
+        return ResponseEntity.ok(response);
     }
 
     @Operation(summary = "로그인", description = "이메일과 비밀번호로 로그인하고 JWT 토큰과 사용자 정보를 반환합니다.")
