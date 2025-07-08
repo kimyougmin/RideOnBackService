@@ -2,6 +2,7 @@ package com.ll.rideon.global.security.oauth2.service;
 
 import java.util.Map;
 
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.oauth2.core.OAuth2AuthenticationException;
 import org.springframework.stereotype.Component;
 
@@ -10,6 +11,7 @@ import com.ll.rideon.global.security.oauth2.dto.OAuthAttributes;
 /**
  * 소셜 로그인 유저 변환 서비스
  */
+@Slf4j
 @Component
 public class OAuthUserConverter {
 	/**
@@ -39,12 +41,19 @@ public class OAuthUserConverter {
 	 */
 	private OAuthAttributes ofKakao(String userNameAttributeName, Map<String, Object> attributes) {
 		Map<String, Object> properties = (Map<String, Object>)attributes.get("properties");
+		Map<String, Object> kakaoAccount = (Map<String, Object>) attributes.get("kakao_account");
+		String birthday = (String) kakaoAccount.get("birthday");
+		String month = birthday.substring(0, 2);
+		String day = birthday.substring(2, 4);
+
 
 		return OAuthAttributes.builder()
 			.name((String)properties.get("nickname"))
 			.profileImage((String)properties.get("profile_image"))
 			.userId(String.valueOf(attributes.get(userNameAttributeName)))
 			.email(null)
+			.phone((String) kakaoAccount.get("phone_number"))
+			.birthDate((String) kakaoAccount.get("birthyear") + "-" + month + "-" + day)
 			.provider("kakao")
 			.attributes(attributes)
 			.build();

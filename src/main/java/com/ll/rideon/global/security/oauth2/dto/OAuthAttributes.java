@@ -1,5 +1,6 @@
 package com.ll.rideon.global.security.oauth2.dto;
 
+import java.time.LocalDateTime;
 import java.util.Map;
 import java.util.UUID;
 
@@ -32,6 +33,14 @@ public class OAuthAttributes {
 	 */
 	private final String email;
 	/**
+	 * 전화번호
+	 */
+	private final String phone;
+	/**
+	 * 생년월일
+	 */
+	private final String birthDate;
+	/**
 	 * 소셜 로그인 제공자
 	 */
 	private final String provider;
@@ -50,12 +59,14 @@ public class OAuthAttributes {
 	 * @param attributes 소셜 로그인 유저 정보
 	 */
 	@Builder
-	public OAuthAttributes(String name, String profileImage, String userId, String email, String provider,
+	public OAuthAttributes(String name, String profileImage, String userId, String email, String provider, String phone, String birthDate,
 		Map<String, Object> attributes) {
 		this.name = name;
 		this.profileImage = profileImage;
 		this.userId = userId;
 		this.email = email;
+		this.phone = phone;
+		this.birthDate = birthDate;
 		this.provider = provider;
 		this.attributes = attributes;
 	}
@@ -74,9 +85,11 @@ public class OAuthAttributes {
 			.name(name)
 			.email(userEmail)
 			.password(UUID.randomUUID().toString())
-			.phone("")
+			.phone(phone.replace("+82 ", "0"))
 			.profileImage(profileImage)
+			.birthDate(birthDate)
 			.userId(userId)
+			.createdAt(LocalDateTime.now())
 			.build();
 	}
 }

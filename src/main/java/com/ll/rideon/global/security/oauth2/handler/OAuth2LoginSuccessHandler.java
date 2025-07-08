@@ -5,6 +5,7 @@ import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.Map;
 
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
@@ -26,6 +27,7 @@ import lombok.RequiredArgsConstructor;
 /**
  * 소셜 로그인 성공 핸들러
  */
+@Slf4j
 @Component
 @RequiredArgsConstructor
 public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
@@ -97,13 +99,17 @@ public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
 			String name = null;
 			String email = null;
 			String profileImg = null;
+			String phone = null;
 			String providerId = null;
+			String birthDate = null;
 
 			if ("kakao".equals(registrationId)) {
 				Map<String, Object> properties = (Map<String, Object>)attributes.get("properties");
 				name = (String)properties.get("nickname");
 				profileImg = (String)properties.get("profile_image");
 				providerId = String.valueOf(attributes.get("id"));
+				phone = String.valueOf(attributes.get("phone_number"));
+				birthDate = String.valueOf(attributes.get("birth_date"));
 
 				return Users.builder()
 					.id(userId)
@@ -111,6 +117,8 @@ public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
 					.email(name + "@kakao.com")
 					.profileImage(profileImg)
 					.userId(providerId)
+					.birthDate(birthDate)
+					.phone(phone)
 					.build();
 			} else if ("google".equals(registrationId)) {
 				name = (String)attributes.get("name");
@@ -157,6 +165,7 @@ public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
 			.name(user.getName())
 			.email(user.getEmail())
 			.profileImage(user.getProfileImage())
+			.phone(user.getPhone())
 			.build();
 	}
 
