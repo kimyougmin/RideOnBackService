@@ -74,7 +74,7 @@ public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
 	}
 
 	/**
-	 * 소셜 로그인 후 사용자 정보를 추출하여 Member 테이블에 맞게 변환
+	 * 소셜 로그인 후 사용자 정보를 추출하여 Users 테이블에 맞게 변환
 	 * @param oAuth2User 소셜 유저
 	 * @return {@link Users}
 	 */
@@ -105,16 +105,19 @@ public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
 
 			if ("kakao".equals(registrationId)) {
 				Map<String, Object> properties = (Map<String, Object>)attributes.get("properties");
+				Map<String, Object> kakaoAccount = (Map<String, Object>)attributes.get("kakao_account");
+
+				email = (String) kakaoAccount.get("email");
 				name = (String)properties.get("nickname");
 				profileImg = (String)properties.get("profile_image");
 				providerId = String.valueOf(attributes.get("id"));
-				phone = String.valueOf(attributes.get("phone_number"));
-				birthDate = String.valueOf(attributes.get("birth_date"));
+				phone = String.valueOf(kakaoAccount.get("phone_number")).replace("+82 ", "0");
+				birthDate = String.valueOf(attributes.get("phone_number"));
 
 				return Users.builder()
 					.id(userId)
 					.name(name)
-					.email(name + "@kakao.com")
+					.email(email)
 					.profileImage(profileImg)
 					.userId(providerId)
 					.birthDate(birthDate)

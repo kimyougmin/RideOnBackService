@@ -4,6 +4,7 @@ import java.time.LocalDateTime;
 import java.util.Map;
 import java.util.UUID;
 
+import com.ll.rideon.domain.users.entity.AuthProvider;
 import com.ll.rideon.domain.users.entity.Users;
 
 import lombok.Builder;
@@ -90,6 +91,7 @@ public class OAuthAttributes {
 			.birthDate(birthDate)
 			.userId(userId)
 			.createdAt(LocalDateTime.now())
+			.provider(AuthProvider.valueOf(provider))
 			.build();
 	}
 }

@@ -46,12 +46,11 @@ public class OAuthUserConverter {
 		String month = birthday.substring(0, 2);
 		String day = birthday.substring(2, 4);
 
-
 		return OAuthAttributes.builder()
 			.name((String)properties.get("nickname"))
 			.profileImage((String)properties.get("profile_image"))
 			.userId(String.valueOf(attributes.get(userNameAttributeName)))
-			.email(null)
+			.email((String) kakaoAccount.get("email"))
 			.phone((String) kakaoAccount.get("phone_number"))
 			.birthDate((String) kakaoAccount.get("birthyear") + "-" + month + "-" + day)
 			.provider("kakao")
