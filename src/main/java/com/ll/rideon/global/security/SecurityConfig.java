@@ -75,15 +75,20 @@ public class SecurityConfig {
                 .and()
                 .authorizeHttpRequests(authz -> authz
                         .requestMatchers(
-                                "/**",
+                                "/",
                                 "/api/oauth2/**",
                                 "/api/auth/**",       // 예: /api/auth/login 등 인증 관련 경로
                                 "/api/users/**",
+                                "/api/test/**",       // 테스트용 API
                                 "/swagger-ui/**",
                                 "/v3/api-docs/**",
                                 "/favicon.ico",
-                                "/error"
+                                "/error",
+                                "/actuator/**"
                         ).permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/posts/**").permitAll()  // 게시글 조회는 공개
+                        .requestMatchers("/api/posts/**").permitAll()  // 임시로 모든 게시글 API 허용
+                        .requestMatchers("/api/riding/**").authenticated()  // 라이딩 API는 인증 필요
                         .anyRequest().authenticated()
                 )
                 .addFilterBefore(new JwtAuthenticationFilter(jwtTokenProvider), UsernamePasswordAuthenticationFilter.class)
