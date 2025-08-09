@@ -1,0 +1,49 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+rule_files:
+  # - "first_rules.yml"
+  # - "second_rules.yml"
+
+scrape_configs:
+  - job_name: 'rideon-backend'
+    static_configs:
+      - targets: ['localhost:8080']
+    metrics_path: '/actuator/prometheus'
+    scrape_interval: 10s
+    scrape_timeout: 5s
+    
+    # 메트릭 레이블 추가
+    metric_relabel_configs:
+      - source_labels: [__name__]
+        regex: 'rideon_.*'
+        action: keep
+
+  - job_name: 'spring-boot-actuator'
+    static_configs:
+      - targets: ['localhost:8080']
+    metrics_path: '/actuator/metrics'
+    scrape_interval: 30s
+    
+    # JVM 메트릭 포함
+    metric_relabel_configs:
+      - source_labels: [__name__]
+        regex: 'jvm_.*|process_.*|system_.*|http_.*'
+        action: keep
+
+  # 추가 모니터링 대상 (필요시)
+  # - job_name: 'database'
+  #   static_configs:
+  #     - targets: ['localhost:5432']
+  #   scrape_interval: 30s
+
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets:
+          # - alertmanager:9093
+
+# 알림 규칙 (필요시)
+# rule_files:
+#   - "alerts.yml" 

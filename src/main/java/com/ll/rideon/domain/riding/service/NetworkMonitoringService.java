@@ -5,6 +5,7 @@ import com.ll.rideon.domain.riding.entity.NetworkStatus;
 import com.ll.rideon.domain.riding.entity.RidingSession;
 import com.ll.rideon.domain.riding.repository.NetworkStatusRepository;
 import com.ll.rideon.domain.riding.repository.RidingSessionRepository;
+import com.ll.rideon.global.monitoring.MetricsService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -21,6 +22,7 @@ public class NetworkMonitoringService {
 
     private final NetworkStatusRepository networkStatusRepository;
     private final RidingSessionRepository ridingSessionRepository;
+    private final MetricsService metricsService;
 
     @Transactional
     public void recordNetworkStatus(Long sessionId, NetworkStatus networkStatus) {
@@ -35,6 +37,9 @@ public class NetworkMonitoringService {
             session.incrementConnectionLostCount();
             session.updateNetworkQuality("DISCONNECTED");
             
+            // 메트릭 기록
+            metricsService.incrementNetworkDisconnection();
+            
             log.warn("라이딩 세션 {} 연결 끊김 감지", sessionId);
         }
 
@@ -46,6 +51,12 @@ public class NetworkMonitoringService {
         // 패킷 손실이 높은 경우 경고
         if (networkStatus.getPacketLossPercentage() != null && networkStatus.getPacketLossPercentage() > 5.0f) {
             log.warn("라이딩 세션 {} 패킷 손실 높음: {}%", sessionId, networkStatus.getPacketLossPercentage());
+        }
+
+        // 네트워크 품질 변경 감지 및 메트릭 기록
+        NetworkQuality currentQuality = assessNetworkQuality(sessionId);
+        if (currentQuality != NetworkQuality.UNKNOWN) {
+            metricsService.incrementNetworkQualityChange();
         }
     }
 

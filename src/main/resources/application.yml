@@ -70,14 +70,37 @@ spring:
     logging:
         level:
             org.springframework.boot.autoconfigure.security: DEBUG
+# Actuator 설정
 management:
-    endpoints:
-        web:
-            exposure:
-                include: prometheus
-    endpoint:
-        prometheus:
-            enabled: true
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+      base-path: /actuator
+  endpoint:
+    health:
+      show-details: always
+    metrics:
+      enabled: true
+    prometheus:
+      enabled: true
+  metrics:
+    export:
+      prometheus:
+        enabled: true
+    tags:
+      application: rideon-backend
+      environment: development
+    distribution:
+      percentiles-histogram:
+        http.server.requests: true
+      percentiles:
+        http.server.requests: 0.5, 0.95, 0.99
+  web:
+    server:
+      request:
+        log:
+          enabled: true
 jwt:
     secret: ${JWT_KEY}
     expiration: 36000000  # 10 hour

@@ -5,7 +5,10 @@ import com.ll.rideon.domain.post.dto.PostResponseDto;
 import com.ll.rideon.domain.post.dto.PostUpdateRequestDto;
 import com.ll.rideon.domain.post.entity.Post;
 import com.ll.rideon.domain.post.repository.PostRepository;
+import com.ll.rideon.global.monitoring.MetricsService;
+import io.micrometer.core.instrument.Timer;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -14,21 +17,34 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
+@Slf4j
 public class PostService {
 
     private final PostRepository postRepository;
+    private final MetricsService metricsService;
 
     @Transactional
     public PostResponseDto createPost(PostCreateRequestDto requestDto, Long userId) {
-        Post post = Post.builder()
-                .userId(userId)
-                .title(requestDto.getTitle())
-                .content(requestDto.getContent())
-                .image(requestDto.getImage())
-                .build();
+        Timer.Sample timer = metricsService.startPostCreationTimer();
+        
+        try {
+            Post post = Post.builder()
+                    .userId(userId)
+                    .title(requestDto.getTitle())
+                    .content(requestDto.getContent())
+                    .image(requestDto.getImage())
+                    .build();
 
-        Post savedPost = postRepository.save(post);
-        return PostResponseDto.from(savedPost);
+            Post savedPost = postRepository.save(post);
+            
+            // 메트릭 기록
+            metricsService.incrementPostCreated();
+            
+            log.info("게시글 생성 완료: ID={}, 사용자={}", savedPost.getId(), userId);
+            return PostResponseDto.from(savedPost);
+        } finally {
+            metricsService.stopPostCreationTimer(timer);
+        }
     }
 
     public PostResponseDto getPost(Long postId) {
@@ -38,7 +54,11 @@ public class PostService {
         // 조회수 증가
         postRepository.incrementViewCount(postId);
         post.incrementViewCount();
+        
+        // 메트릭 기록
+        metricsService.incrementPostViewed();
 
+        log.debug("게시글 조회: ID={}", postId);
         return PostResponseDto.from(post);
     }
 
@@ -62,6 +82,11 @@ public class PostService {
         }
 
         post.update(requestDto.getTitle(), requestDto.getContent(), requestDto.getImage());
+        
+        // 메트릭 기록
+        metricsService.incrementPostUpdated();
+        
+        log.info("게시글 수정 완료: ID={}, 사용자={}", postId, userId);
         return PostResponseDto.from(post);
     }
 
@@ -75,5 +100,10 @@ public class PostService {
         }
 
         postRepository.delete(post);
+        
+        // 메트릭 기록
+        metricsService.incrementPostDeleted();
+        
+        log.info("게시글 삭제 완료: ID={}, 사용자={}", postId, userId);
     }
 } 

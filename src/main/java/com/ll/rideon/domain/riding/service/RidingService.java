@@ -12,6 +12,8 @@ import com.ll.rideon.domain.riding.entity.RidingStatus;
 import com.ll.rideon.domain.riding.repository.NetworkStatusRepository;
 import com.ll.rideon.domain.riding.repository.RidingLocationRepository;
 import com.ll.rideon.domain.riding.repository.RidingSessionRepository;
+import com.ll.rideon.global.monitoring.MetricsService;
+import io.micrometer.core.instrument.Timer;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -32,57 +34,76 @@ public class RidingService {
     private final RidingLocationRepository ridingLocationRepository;
     private final NetworkStatusRepository networkStatusRepository;
     private final NetworkMonitoringService networkMonitoringService;
+    private final MetricsService metricsService;
 
     @Transactional
     public RidingSessionResponseDto createRidingSession(Long userId, RidingSessionCreateRequestDto requestDto) {
-        // 기존 활성 세션이 있는지 확인
-        ridingSessionRepository.findActiveSessionByUserId(userId)
-                .ifPresent(session -> {
-                    throw new IllegalStateException("이미 진행 중인 라이딩 세션이 있습니다.");
-                });
-
-        RidingSession session = RidingSession.builder()
-                .userId(userId)
-                .build();
-
-        RidingSession savedSession = ridingSessionRepository.save(session);
-        log.info("라이딩 세션 생성: userId={}, sessionId={}", userId, savedSession.getId());
+        Timer.Sample timer = metricsService.startRidingSessionTimer();
         
-        return RidingSessionResponseDto.from(savedSession);
+        try {
+            // 기존 활성 세션이 있는지 확인
+            ridingSessionRepository.findActiveSessionByUserId(userId)
+                    .ifPresent(session -> {
+                        throw new IllegalStateException("이미 진행 중인 라이딩 세션이 있습니다.");
+                    });
+
+            RidingSession session = RidingSession.builder()
+                    .userId(userId)
+                    .build();
+
+            RidingSession savedSession = ridingSessionRepository.save(session);
+            
+            // 메트릭 기록
+            metricsService.incrementRidingSessionCreated();
+            
+            log.info("라이딩 세션 생성: userId={}, sessionId={}", userId, savedSession.getId());
+            return RidingSessionResponseDto.from(savedSession);
+        } finally {
+            metricsService.stopRidingSessionTimer(timer);
+        }
     }
 
     @Transactional
     public void updateLocation(Long sessionId, LocationUpdateRequestDto requestDto) {
-        RidingSession session = ridingSessionRepository.findById(sessionId)
-                .orElseThrow(() -> new IllegalArgumentException("라이딩 세션을 찾을 수 없습니다."));
+        Timer.Sample timer = metricsService.startLocationUpdateTimer();
+        
+        try {
+            RidingSession session = ridingSessionRepository.findById(sessionId)
+                    .orElseThrow(() -> new IllegalArgumentException("라이딩 세션을 찾을 수 없습니다."));
 
-        // 위치 정보 저장
-        RidingLocation location = RidingLocation.builder()
-                .rideSessionId(sessionId)
-                .latitude(requestDto.getLatitude())
-                .longitude(requestDto.getLongitude())
-                .speedKmh(requestDto.getSpeedKmh())
-                .altitude(requestDto.getAltitude())
-                .accuracy(requestDto.getAccuracy())
-                .heading(requestDto.getHeading())
-                .recordedAt(requestDto.getRecordedAt() != null ? requestDto.getRecordedAt() : LocalDateTime.now())
-                .networkQuality(requestDto.getNetworkQuality())
-                .batteryLevel(requestDto.getBatteryLevel())
-                .isOfflineSync(requestDto.getIsOfflineSync())
-                .build();
+            // 위치 정보 저장
+            RidingLocation location = RidingLocation.builder()
+                    .rideSessionId(sessionId)
+                    .latitude(requestDto.getLatitude())
+                    .longitude(requestDto.getLongitude())
+                    .speedKmh(requestDto.getSpeedKmh())
+                    .altitude(requestDto.getAltitude())
+                    .accuracy(requestDto.getAccuracy())
+                    .heading(requestDto.getHeading())
+                    .recordedAt(requestDto.getRecordedAt() != null ? requestDto.getRecordedAt() : LocalDateTime.now())
+                    .networkQuality(requestDto.getNetworkQuality())
+                    .batteryLevel(requestDto.getBatteryLevel())
+                    .isOfflineSync(requestDto.getIsOfflineSync())
+                    .build();
 
-        ridingLocationRepository.save(location);
+            ridingLocationRepository.save(location);
 
-        // 세션의 마지막 위치 업데이트
-        session.updateLocation(requestDto.getLatitude(), requestDto.getLongitude(), location.getRecordedAt());
+            // 세션의 마지막 위치 업데이트
+            session.updateLocation(requestDto.getLatitude(), requestDto.getLongitude(), location.getRecordedAt());
 
-        // 네트워크 품질 업데이트
-        if (requestDto.getNetworkQuality() != null) {
-            session.updateNetworkQuality(requestDto.getNetworkQuality());
+            // 네트워크 품질 업데이트
+            if (requestDto.getNetworkQuality() != null) {
+                session.updateNetworkQuality(requestDto.getNetworkQuality());
+            }
+
+            // 메트릭 기록
+            metricsService.incrementLocationUpdate();
+            
+            log.debug("위치 업데이트: sessionId={}, lat={}, lng={}, speed={}", 
+                    sessionId, requestDto.getLatitude(), requestDto.getLongitude(), requestDto.getSpeedKmh());
+        } finally {
+            metricsService.stopLocationUpdateTimer(timer);
         }
-
-        log.debug("위치 업데이트: sessionId={}, lat={}, lng={}, speed={}", 
-                sessionId, requestDto.getLatitude(), requestDto.getLongitude(), requestDto.getSpeedKmh());
     }
 
     @Transactional
@@ -104,6 +125,14 @@ public class RidingService {
 
         // 네트워크 모니터링 서비스에 상태 기록
         networkMonitoringService.recordNetworkStatus(sessionId, networkStatus);
+        
+        // 네트워크 연결 상태에 따른 메트릭 기록
+        if (!requestDto.getIsConnected()) {
+            metricsService.incrementNetworkDisconnection();
+        }
+        
+        log.debug("네트워크 상태 업데이트: sessionId={}, connected={}, quality={}", 
+                sessionId, requestDto.getIsConnected(), requestDto.getConnectionType());
     }
 
     @Transactional
@@ -112,6 +141,9 @@ public class RidingService {
                 .orElseThrow(() -> new IllegalArgumentException("라이딩 세션을 찾을 수 없습니다."));
 
         session.endSession();
+        
+        // 메트릭 기록
+        metricsService.incrementRidingSessionCompleted();
         
         // 오프라인 동기화 데이터 처리
         List<RidingLocation> offlineLocations = ridingLocationRepository
