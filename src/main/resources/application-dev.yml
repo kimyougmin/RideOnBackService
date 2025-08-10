@@ -2,7 +2,7 @@ spring:
   application:
     name: RideOn
   datasource:
-    url: jdbc:h2:mem:testdb;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
+    url: jdbc:h2:mem:devdb;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
     username: sa
     password: 
     driver-class-name: org.h2.Driver
@@ -17,6 +17,7 @@ spring:
   h2:
     console:
       enabled: true
+      path: /h2-console
   flyway:
     enabled: true
     locations: classpath:db/migration
@@ -71,25 +72,51 @@ spring:
   logging:
     level:
       org.springframework.boot.autoconfigure.security: DEBUG
-      org.hibernate.SQL: DEBUG
-      org.hibernate.type.descriptor.sql.BasicBinder: TRACE
+      com.ll.rideon: DEBUG
+
+# Actuator 설정
 management:
   endpoints:
     web:
       exposure:
-        include: prometheus
+        include: health,info,metrics,prometheus
+      base-path: /actuator
   endpoint:
+    health:
+      show-details: always
+    metrics:
+      enabled: true
     prometheus:
       enabled: true
+  metrics:
+    export:
+      prometheus:
+        enabled: true
+    tags:
+      application: rideon-backend
+      environment: development
+    distribution:
+      percentiles-histogram:
+        http.server.requests: true
+      percentiles:
+        http.server.requests: 0.5, 0.95, 0.99
+  web:
+    server:
+      request:
+        log:
+          enabled: true
+
 jwt:
-  secret: test-secret-key-for-testing-purposes-only
-  expiration: 36000000
+  secret: dev-secret-key-for-development-only
+  expiration: 36000000  # 10 hour
   token:
-    access-expiration: 900000
-    refresh-expiration: 604800000
+    access-expiration: 900000      # 15분 (15 * 60 * 1000 ms)
+    refresh-expiration: 604800000  # 7일 (7 * 24 * 60 * 60 * 1000 ms)
+
 naver:
   client-id: test
   client-secret: test
+
 site:
   url:
-    frontend: "http://localhost:3000" 
+    frontend: "http://localhost:3000"
