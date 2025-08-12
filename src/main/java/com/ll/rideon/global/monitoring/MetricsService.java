@@ -40,6 +40,11 @@ public class MetricsService {
     private Counter networkDisconnectionCounter;
     private Counter networkQualityChangeCounter;
 
+    // 장애물 신고 관련 메트릭
+    private Counter obstacleReportCreatedCounter;
+    private Counter obstacleReportStatusUpdatedCounter;
+    private Timer obstacleReportCreationTimer;
+
     // 사용자 관련 메트릭
     private Counter userLoginCounter;
     private Counter userRegistrationCounter;
@@ -133,6 +138,19 @@ public class MetricsService {
         // API 메트릭 초기화
         apiResponseTimer = Timer.builder("rideon.api.response.time")
                 .description("API 응답 시간")
+                .register(meterRegistry);
+
+        // 장애물 신고 메트릭 초기화
+        obstacleReportCreatedCounter = Counter.builder("rideon.obstacles.reports.created")
+                .description("생성된 장애물 신고 수")
+                .register(meterRegistry);
+
+        obstacleReportStatusUpdatedCounter = Counter.builder("rideon.obstacles.reports.status.updated")
+                .description("상태가 업데이트된 장애물 신고 수")
+                .register(meterRegistry);
+
+        obstacleReportCreationTimer = Timer.builder("rideon.obstacles.reports.creation.time")
+                .description("장애물 신고 생성 소요 시간")
                 .register(meterRegistry);
 
         log.info("프로메테우스 메트릭이 초기화되었습니다.");
@@ -262,6 +280,26 @@ public class MetricsService {
     public void stopApiResponseTimer(Timer.Sample sample) {
         sample.stop(apiResponseTimer);
         log.debug("API 응답 타이머 종료");
+    }
+
+    // 장애물 신고 메트릭 메서드
+    public void incrementObstacleReportCount(String reportType) {
+        obstacleReportCreatedCounter.increment();
+        log.debug("장애물 신고 생성 메트릭 증가 - 타입: {}", reportType);
+    }
+
+    public void incrementObstacleReportStatusUpdated() {
+        obstacleReportStatusUpdatedCounter.increment();
+        log.debug("장애물 신고 상태 업데이트 메트릭 증가");
+    }
+
+    public Timer.Sample startObstacleReportCreationTimer() {
+        return Timer.start(meterRegistry);
+    }
+
+    public void stopObstacleReportCreationTimer(Timer.Sample sample) {
+        sample.stop(obstacleReportCreationTimer);
+        log.debug("장애물 신고 생성 타이머 종료");
     }
 
     // 커스텀 게이지 메트릭
