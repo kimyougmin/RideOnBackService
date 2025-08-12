@@ -84,10 +84,12 @@ public class SecurityConfig {
                                 "/v3/api-docs/**",
                                 "/favicon.ico",
                                 "/error",
-                                "/actuator/**"
+                                "/actuator/**",
+                                "/h2-console/**"      // H2 콘솔 접근 허용
                         ).permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/posts/**").permitAll()  // 게시글 조회는 공개
                         .requestMatchers("/api/posts/**").permitAll()  // 임시로 모든 게시글 API 허용
+                        .requestMatchers(HttpMethod.GET, "/api/v1/obstacles/**").permitAll()  // 장애물 신고 조회 API 허용 (테스트용)
                         .requestMatchers("/api/riding/**").authenticated()  // 라이딩 API는 인증 필요
                         .anyRequest().authenticated()
                 )

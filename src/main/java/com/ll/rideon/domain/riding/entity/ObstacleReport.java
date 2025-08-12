@@ -24,24 +24,24 @@ public class ObstacleReport {
     @Column(name = "user_id", nullable = false)
     private Long userId;
 
-    @Column(name = "latitude", nullable = false)
+    @Column(name = "latitude", nullable = false, columnDefinition = "DOUBLE PRECISION")
     private Double latitude;
 
-    @Column(name = "longitude", nullable = false)
+    @Column(name = "longitude", nullable = false, columnDefinition = "DOUBLE PRECISION")
     private Double longitude;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "report_type", nullable = false)
+    @Column(name = "report_type", nullable = false, columnDefinition = "report_type_enum")
     private ReportType reportType;
 
     @Column(name = "description", columnDefinition = "TEXT")
     private String description;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "status")
+    @Column(name = "status", columnDefinition = "report_status_enum")
     private ReportStatus status;
 
-    @Column(name = "image", length = 500)
+    @Column(name = "image", columnDefinition = "TEXT")
     private String image;
 
     @CreatedDate
