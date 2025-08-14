@@ -27,8 +27,8 @@ WORKDIR /app
 # Create non-root user
 RUN groupadd -r appuser && useradd -r -g appuser appuser
 
-# Copy the built JAR from build stage
-COPY --from=build /app/build/libs/*.jar app.jar
+# Copy the built JAR from build stage (use the specific JAR file)
+COPY --from=build /app/build/libs/app.jar app.jar
 
 # Change ownership to non-root user
 RUN chown appuser:appuser app.jar

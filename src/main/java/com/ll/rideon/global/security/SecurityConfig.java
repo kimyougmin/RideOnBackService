@@ -74,11 +74,13 @@ public class SecurityConfig {
                 .sessionManagement().sessionCreationPolicy(SessionCreationPolicy.STATELESS)
                 .and()
                 .authorizeHttpRequests(authz -> authz
+                        // 기본 공개 경로
                         .requestMatchers(
                                 "/",
                                 "/api/oauth2/**",
-                                "/api/auth/**",       // 예: /api/auth/login 등 인증 관련 경로
-                                "/api/users/**",
+                                "/api/auth/**",       // 로그인 관련 모든 경로 (GET, POST 모두 허용)
+                                "/api/users/register", // 회원가입
+                                "/api/users/login",   // 로그인
                                 "/api/test/**",       // 테스트용 API
                                 "/swagger-ui/**",
                                 "/v3/api-docs/**",
@@ -87,10 +89,37 @@ public class SecurityConfig {
                                 "/actuator/**",
                                 "/h2-console/**"      // H2 콘솔 접근 허용
                         ).permitAll()
-                        .requestMatchers(HttpMethod.GET, "/api/posts/**").permitAll()  // 게시글 조회는 공개
-                        .requestMatchers("/api/posts/**").permitAll()  // 임시로 모든 게시글 API 허용
-                        .requestMatchers(HttpMethod.GET, "/api/v1/obstacles/**").permitAll()  // 장애물 신고 조회 API 허용 (테스트용)
-                        .requestMatchers("/api/riding/**").authenticated()  // 라이딩 API는 인증 필요
+                        
+                        // GET 메소드 - 인증 없이 접근 가능 (더 구체적인 경로를 먼저 설정)
+                        .requestMatchers(HttpMethod.GET, "/api/news/**").permitAll()            // 뉴스 조회
+                        .requestMatchers(HttpMethod.GET, "/api/posts/**").permitAll()           // 커뮤니티 게시글 조회
+                        .requestMatchers(HttpMethod.GET, "/api/v1/obstacles/**").permitAll()    // 장애물 신고 조회
+                        .requestMatchers(HttpMethod.GET, "/api/network/**").permitAll()         // 네트워크 추적 조회
+                        .requestMatchers(HttpMethod.GET, "/api/riding/**").permitAll()          // 라이딩 기록 조회
+                        .requestMatchers(HttpMethod.GET, "/api/users/**").permitAll()           // 사용자 정보 조회
+                        .requestMatchers(HttpMethod.GET, "/api/questions/**").permitAll()       // 질문 조회
+                        .requestMatchers(HttpMethod.GET, "/api/inquiries/**").permitAll()       // 문의 조회
+                        
+                        // POST/PUT/DELETE 메소드 - 인증 필요
+                        .requestMatchers(HttpMethod.POST, "/api/posts/**").authenticated()      // 게시글 작성
+                        .requestMatchers(HttpMethod.PUT, "/api/posts/**").authenticated()       // 게시글 수정
+                        .requestMatchers(HttpMethod.DELETE, "/api/posts/**").authenticated()    // 게시글 삭제
+                        .requestMatchers(HttpMethod.POST, "/api/v1/obstacles/**").authenticated() // 장애물 신고 작성
+                        .requestMatchers(HttpMethod.PUT, "/api/v1/obstacles/**").authenticated()  // 장애물 신고 수정
+                        .requestMatchers(HttpMethod.DELETE, "/api/v1/obstacles/**").authenticated() // 장애물 신고 삭제
+                        .requestMatchers(HttpMethod.POST, "/api/riding/**").authenticated()     // 라이딩 시작/종료
+                        .requestMatchers(HttpMethod.PUT, "/api/riding/**").authenticated()      // 라이딩 정보 수정
+                        .requestMatchers(HttpMethod.DELETE, "/api/riding/**").authenticated()   // 라이딩 기록 삭제
+                        .requestMatchers(HttpMethod.POST, "/api/questions/**").authenticated()  // 질문 작성
+                        .requestMatchers(HttpMethod.PUT, "/api/questions/**").authenticated()   // 질문 수정
+                        .requestMatchers(HttpMethod.DELETE, "/api/questions/**").authenticated() // 질문 삭제
+                        .requestMatchers(HttpMethod.POST, "/api/inquiries/**").authenticated()  // 문의 작성
+                        .requestMatchers(HttpMethod.PUT, "/api/inquiries/**").authenticated()   // 문의 수정
+                        .requestMatchers(HttpMethod.DELETE, "/api/inquiries/**").authenticated() // 문의 삭제
+                        .requestMatchers(HttpMethod.PUT, "/api/users/**").authenticated()       // 사용자 정보 수정
+                        .requestMatchers(HttpMethod.DELETE, "/api/users/**").authenticated()    // 사용자 삭제
+                        
+                        // 기타 모든 요청은 인증 필요
                         .anyRequest().authenticated()
                 )
                 .addFilterBefore(new JwtAuthenticationFilter(jwtTokenProvider), UsernamePasswordAuthenticationFilter.class)

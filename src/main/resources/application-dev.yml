@@ -1,6 +1,8 @@
 spring:
   application:
     name: RideOn
+  config:
+    import: optional:file:.env[.properties]
   datasource:
     url: jdbc:postgresql://${DB_URL}:${DB_PORT}/${DB_NAME}
     username: ${DB_USER}
@@ -115,8 +117,8 @@ jwt:
     refresh-expiration: 604800000  # 7일 (7 * 24 * 60 * 60 * 1000 ms)
 
 naver:
-  client-id: test
-  client-secret: test
+  client-id: ${NAVER_CLIENT_ID:test}
+  client-secret: ${NAVER_CLIENT_SECRET:test}
 
 site:
   url:
