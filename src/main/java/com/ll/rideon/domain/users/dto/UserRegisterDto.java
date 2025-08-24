@@ -29,4 +29,7 @@ public class UserRegisterDto {
 
     @Schema(description = "전화번호", example = "010-1234-1234")
     private String phone;
+
+    @Schema(description = "가입방법", example = "original")
+    private String provider;
 }

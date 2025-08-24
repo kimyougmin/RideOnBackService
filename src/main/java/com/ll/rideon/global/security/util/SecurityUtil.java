@@ -39,4 +39,20 @@ public class SecurityUtil {
         
         throw new IllegalStateException("사용자 정보를 찾을 수 없습니다.");
     }
+
+    public static String getCurrentUserEmail() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        
+        if (authentication == null || !authentication.isAuthenticated()) {
+            throw new IllegalStateException("인증되지 않은 사용자입니다.");
+        }
+        
+        Object principal = authentication.getPrincipal();
+        
+        if (principal instanceof CustomUserDetails) {
+            return ((CustomUserDetails) principal).getUsers().getEmail();
+        }
+        
+        throw new IllegalStateException("사용자 정보를 찾을 수 없습니다.");
+    }
 } 

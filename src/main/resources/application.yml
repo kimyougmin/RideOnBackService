@@ -113,3 +113,5 @@ naver:
 site:
     url:
         frontend: "http://localhost:3000"
+app:
+    frontend-url: "http://localhost:3000"

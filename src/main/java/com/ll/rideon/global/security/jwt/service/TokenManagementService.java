@@ -1,195 +1,107 @@
 package com.ll.rideon.global.security.jwt.service;
 
-import java.io.IOException;
-import java.util.concurrent.TimeUnit;
-
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.ResponseCookie;
-import org.springframework.http.ResponseEntity;
-import org.springframework.stereotype.Service;
-
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.ll.rideon.domain.users.entity.Users;
-//import com.ll.rideon.global.redis.repository.RedisRepository;
-import com.ll.rideon.global.security.custom.CustomUserDetails;
-import com.ll.rideon.util.AuthResponseUtil;
-import com.ll.rideon.util.JwtUtil;
-
-import jakarta.servlet.http.Cookie;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
-import lombok.Getter;
+import com.ll.rideon.global.security.jwt.JwtTokenProvider;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Service;
 
-/**
- * TokenManagementService (토큰 관리 서비스)
- */
-@Slf4j
+import java.util.concurrent.ConcurrentHashMap;
+
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class TokenManagementService {
-    /**
-     * jwt 유틸리티
-     */
-    private final JwtUtil jwtUtil;
-    /**
-     * redis repository
-     */
-//    private final RedisRepository redisRepository;
-    /**
-     * 토큰 서비스
-     */
-    private final TokenService tokenService;
-    /**
-     * ObjectMapper
-     */
-    private final ObjectMapper objectMapper;
+
+    private final JwtTokenProvider jwtTokenProvider;
+    
+    // 메모리에 리프레시 토큰을 저장 (실제 운영에서는 Redis 사용 권장)
+    private final ConcurrentHashMap<String, String> refreshTokenStore = new ConcurrentHashMap<>();
 
     /**
-     * 엑세스 토큰 유효 기간
+     * 리프레시 토큰을 저장합니다.
+     * @param userId 사용자 ID
+     * @param refreshToken 리프레시 토큰
      */
-    @Value("${jwt.token.access-expiration}")
-    private long accessExpiration;
-
-    /**
-     * 리프레시 토큰 유효 기간
-     */
-    @Value("${jwt.token.refresh-expiration}")
-    private long refreshExpiration;
-
-    /**
-     * 엑세스 토큰
-     */
-    @Getter
-    private String accessToken;
-
-    /**
-     * 리프레시 토큰
-     */
-    @Getter
-    private Cookie refreshTokenCookie;
-
-    /**
-     * 토큰 생성 및 저장
-     * @param userDetails CustomUserDetails
-     * @param response HttpServletResponse
-     */
-    public void createAndStoreTokens(CustomUserDetails userDetails, HttpServletResponse response) {
-        String accessToken1 = jwtUtil.createAccessToken(userDetails, accessExpiration);
-//        String refreshToken = jwtUtil.createRefreshToken(userDetails, refreshExpiration);
-
-        String accessTokenCookie = String.valueOf(jwtUtil.setJwtCookie("accessToken", accessToken1, accessExpiration));
-        response.addHeader("Set-Cookie", accessTokenCookie);
-
-//        redisRepository.save(accessToken1, refreshToken, refreshExpiration, TimeUnit.MILLISECONDS);
-
-        this.accessToken = accessToken1;
+    public void saveRefreshToken(String userId, String refreshToken) {
+        refreshTokenStore.put(userId, refreshToken);
+        log.info("리프레시 토큰 저장 완료 - 사용자: {}", userId);
     }
 
     /**
-     * 토큰 재발급
-     * @param request HttpServletRequest
-     * @param response HttpServletResponse
-     * @throws IOException 예외
+     * 사용자의 리프레시 토큰을 조회합니다.
+     * @param userId 사용자 ID
+     * @return 리프레시 토큰 (없으면 null)
      */
-    public void reissueTokens(HttpServletRequest request, HttpServletResponse response) throws IOException {
-        String accessToken1 = tokenService.getAccessToken(request);
-        String refreshToken = tokenService.getRefreshToken(accessToken1);
+    public String getRefreshToken(String userId) {
+        return refreshTokenStore.get(userId);
+    }
 
-        if (refreshToken == null) {
-            throw new IllegalArgumentException("리프레시 토큰이 없습니다.");
+    /**
+     * 리프레시 토큰을 삭제합니다.
+     * @param userId 사용자 ID
+     */
+    public void deleteRefreshToken(String userId) {
+        refreshTokenStore.remove(userId);
+        log.info("리프레시 토큰 삭제 완료 - 사용자: {}", userId);
+    }
+
+    /**
+     * 리프레시 토큰이 유효한지 확인합니다.
+     * @param refreshToken 리프레시 토큰
+     * @return 유효성 여부
+     */
+    public boolean isValidRefreshToken(String refreshToken) {
+        if (!jwtTokenProvider.validateToken(refreshToken)) {
+            return false;
         }
 
-        String username = jwtUtil.getUsername(refreshToken);
+        String tokenType = jwtTokenProvider.getTokenType(refreshToken);
+        if (!"REFRESH".equals(tokenType)) {
+            return false;
+        }
 
-        CustomUserDetails userDetails = new CustomUserDetails(
-                Users.builder()
-                        .email(username)
-                        .id(jwtUtil.getUserId(refreshToken))
-                        .build()
-        );
+        if (jwtTokenProvider.isTokenExpired(refreshToken)) {
+            return false;
+        }
 
-        // 새 토큰 발급
-        String newAccessToken = jwtUtil.createAccessToken(userDetails, accessExpiration);
-        String newRefreshToken = jwtUtil.createRefreshToken(userDetails, refreshExpiration);
-
-        String accessTokenCookie = String.valueOf(jwtUtil.setJwtCookie("accessToken", newAccessToken, accessExpiration));
-        response.addHeader("Set-Cookie", accessTokenCookie);
-
-        // Redis 업데이트
-//        redisRepository.remove(accessToken1); // 이전 액세스 토큰 제거
-//        redisRepository.save(newAccessToken, newRefreshToken, refreshExpiration, TimeUnit.MILLISECONDS);
-
-        // 응답 처리
-        AuthResponseUtil.success(
-                response,
-                newAccessToken,
-                null, // refreshToken은 쿠키가 아닌 Redis에 저장
-                HttpServletResponse.SC_OK,
-                ResponseEntity.ok("AccessToken 발급 성공"),
-                objectMapper);
-
-        log.info("토큰 재발급 성공 - 사용자: {}", username);
+        // 저장된 토큰과 일치하는지 확인
+        String userId = jwtTokenProvider.getEmailFromToken(refreshToken);
+        String storedToken = getRefreshToken(userId);
+        return refreshToken.equals(storedToken);
     }
 
     /**
-     * 토큰 무효화
-     * @param accessToken 액세스 토큰
+     * 리프레시 토큰을 사용하여 새로운 액세스 토큰을 생성합니다.
+     * @param refreshToken 리프레시 토큰
+     * @return 새로운 액세스 토큰 (실패 시 null)
      */
-//    public void invalidateTokens(String accessToken) {
-//        if (accessToken == null) {
-//            return;
-//        }
-//
-//        try {
-//            // 사용자 정보 추출
-//            String username = jwtUtil.getUsername(accessToken);
-//
-//            // Redis에서 리프레시 토큰 삭제
-//            redisRepository.remove(accessToken);
-//
-//            // 액세스 토큰 블랙리스트에 추가 (만료 시간까지만)
-//            long expiration = jwtUtil.getExpirationDate(accessToken).getTime() - System.currentTimeMillis();
-//            if (expiration > 0) {
-//                redisRepository.save("blacklist:" + accessToken, "LOGOUT", expiration, TimeUnit.MILLISECONDS);
-//            }
-//
-//            log.info("토큰 무효화 성공 - 사용자: {}", username);
-//        } catch (Exception e) {
-//            log.error("토큰 무효화 중 오류 발생", e);
-//        }
-//    }
+    public String refreshAccessToken(String refreshToken) {
+        if (!isValidRefreshToken(refreshToken)) {
+            log.warn("유효하지 않은 리프레시 토큰");
+            return null;
+        }
 
-    /**
-     * 쿠키 무효화
-     * @param cookieName 쿠키 이름
-     * @return 무효화된 쿠키
-     */
-    public Cookie invalidateCookie(String cookieName) {
-        Cookie cookie = new Cookie(cookieName, null);
-        cookie.setMaxAge(0);
-        cookie.setPath("/");
-        cookie.setHttpOnly(true);
-        cookie.setDomain(".rideon-backend.kro.kr");
-        return cookie;
+        try {
+            String email = jwtTokenProvider.getEmailFromToken(refreshToken);
+            Long id = jwtTokenProvider.getIdFromToken(refreshToken);
+            
+            // 새로운 액세스 토큰 생성
+            String newAccessToken = jwtTokenProvider.createAccessToken(email, id, email);
+            log.info("새로운 액세스 토큰 생성 완료 - 사용자: {}", email);
+            
+            return newAccessToken;
+        } catch (Exception e) {
+            log.error("액세스 토큰 갱신 실패", e);
+            return null;
+        }
     }
 
     /**
-     * 쿠키 무효화 수정 버전
-     * @param key
-     * @param value
-     * @return
+     * 사용자 로그아웃 시 모든 토큰을 삭제합니다.
+     * @param userId 사용자 ID
      */
-    public String deleteCookie(String key, String value) {
-        return ResponseCookie.from(key, value)
-                .path("/")
-                .sameSite("None")
-                .secure(true)
-                .domain(".rideon-backend.kro.kr")
-                .maxAge(0)
-                .httpOnly(true)
-                .build()
-                .toString();
+    public void logout(String userId) {
+        deleteRefreshToken(userId);
+        log.info("사용자 로그아웃 완료 - 사용자: {}", userId);
     }
 }

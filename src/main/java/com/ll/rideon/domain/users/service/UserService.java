@@ -1,6 +1,7 @@
 package com.ll.rideon.domain.users.service;
 
 import com.ll.rideon.domain.users.dto.*;
+import com.ll.rideon.domain.users.entity.AuthProvider;
 import com.ll.rideon.domain.users.entity.Users;
 import com.ll.rideon.domain.users.repository.UserRepository;
 import com.ll.rideon.global.security.jwt.JwtTokenProvider;
@@ -33,6 +34,21 @@ public class UserService {
             throw new IllegalStateException("이미 존재하는 이메일입니다.");
         }
 
+        // provider가 null이거나 빈 문자열인 경우 기본값으로 'original' 설정
+        String providerValue = dto.getProvider();
+        if (providerValue == null || providerValue.trim().isEmpty()) {
+            providerValue = "original";
+        }
+
+        // 유효한 provider 값인지 확인
+        AuthProvider provider;
+        try {
+            provider = AuthProvider.valueOf(providerValue);
+        } catch (IllegalArgumentException e) {
+            log.warn("Invalid provider value: {}, using default provider: original", providerValue);
+            provider = AuthProvider.original;
+        }
+
         Users users = Users.builder()
                 .email(dto.getEmail())
                 .password(passwordEncoder.encode(dto.getPassword()))
@@ -42,9 +58,11 @@ public class UserService {
                 .birthDate(dto.getBirthDate())
                 .userId(UUID.randomUUID().toString())
                 .createdAt(LocalDateTime.now())
+                .provider(provider)
                 .build();
 
         userRepository.save(users);
+        log.info("User registered successfully: {}", dto.getEmail());
     }
     /**
      * 로그인 처리 및 JWT 토큰 반환

@@ -1,76 +1,82 @@
 package com.ll.rideon.global.security.oauth2.handler;
 
-import java.io.IOException;
-import java.net.URLEncoder;
-import java.nio.charset.StandardCharsets;
-import java.util.Map;
-
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.ll.rideon.domain.users.dto.SocialLoginResponse;
+import com.ll.rideon.domain.users.entity.Users;
+import com.ll.rideon.global.security.custom.CustomUserDetails;
+import com.ll.rideon.global.security.jwt.JwtTokenProvider;
+import com.ll.rideon.global.security.jwt.service.TokenManagementService;
+import com.ll.rideon.global.security.oauth2.dto.OAuthAttributes;
+import com.ll.rideon.global.security.oauth2.service.CustomOAuth2UserService;
+import com.ll.rideon.global.security.oauth2.service.OAuth2UserSaveService;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.oauth2.core.OAuth2AuthenticationException;
 import org.springframework.security.oauth2.core.user.OAuth2User;
-import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
+import org.springframework.security.web.authentication.SimpleUrlAuthenticationSuccessHandler;
 import org.springframework.stereotype.Component;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.ll.rideon.domain.users.dto.SocialLoginResponse;
-import com.ll.rideon.domain.users.entity.Users;
-import com.ll.rideon.global.security.custom.CustomUserDetails;
-import com.ll.rideon.global.security.jwt.service.TokenManagementService;
+import java.io.IOException;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
+import java.util.Map;
 
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
-import lombok.RequiredArgsConstructor;
-
-/**
- * 소셜 로그인 성공 핸들러
- */
 @Slf4j
 @Component
 @RequiredArgsConstructor
-public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
-	/**
-	 * 토큰 관리 서비스
-	 */
+public class OAuth2LoginSuccessHandler extends SimpleUrlAuthenticationSuccessHandler {
+
+	private final CustomOAuth2UserService customOAuth2UserService;
+	private final OAuth2UserSaveService oAuth2UserSaveService;
 	private final TokenManagementService tokenManagementService;
-	/**
-	 * ObjectMapper
-	 */
+	private final JwtTokenProvider jwtTokenProvider;
 	private final ObjectMapper objectMapper;
 
-	@Value("${site.url.frontend}")
+	@Value("${app.frontend-url}")
 	private String frontendUrl;
 
-	/**
-	 * 소셜 로그인 성공을 다루는 메서드
-	 * @param req HttpServletRequest
-	 * @param resp HttpServletResponse
-	 * @param authentication Authentication
-	 * @throws IOException 예외
-	 */
 	@Override
-	public void onAuthenticationSuccess(HttpServletRequest req, HttpServletResponse resp,
-		Authentication authentication) throws IOException {
-		OAuth2User oAuth2User = (OAuth2User)authentication.getPrincipal();
+	public void onAuthenticationSuccess(HttpServletRequest request, HttpServletResponse response,
+		Authentication authentication) throws IOException, ServletException {
+		log.info("OAuth2 로그인 성공");
 
-		Users user = extractUserFromOAuth2User(oAuth2User);
+		try {
+			OAuth2User oAuth2User = (OAuth2User) authentication.getPrincipal();
+			Users user = extractUserFromOAuth2User(oAuth2User);
 
-		CustomUserDetails userDetails = new CustomUserDetails(user);
+			// 사용자 저장 또는 업데이트 (OAuth2의 경우 별도 처리 필요)
+			// 여기서는 간단히 user를 그대로 사용하지만, 실제로는 OAuth2 사용자 정보를 적절히 처리해야 합니다
+			Users savedUser = user;
 
-		String email = userDetails.getUsername();
-		if (email == null || email.isEmpty()) {
-			throw new OAuth2AuthenticationException("이메일 정보가 없습니다.");
+			CustomUserDetails userDetails = new CustomUserDetails(savedUser);
+
+			String email = userDetails.getUsername();
+			if (email == null || email.isEmpty()) {
+				throw new OAuth2AuthenticationException("이메일 정보가 없습니다.");
+			}
+
+			// JWT 토큰 생성 및 저장
+			String accessToken = jwtTokenProvider.createAccessToken(email, savedUser.getId(), email);
+			String refreshToken = jwtTokenProvider.createRefreshToken(email, savedUser.getId(), email);
+			
+			// 리프레시 토큰 저장
+			tokenManagementService.saveRefreshToken(email, refreshToken);
+
+			SocialLoginResponse dtoResp = createSocialLoginResponse(savedUser);
+
+			setJsonResponse(response, dtoResp, accessToken);
+
+			redirectToFrontend(response, accessToken, dtoResp);
+		} catch (Exception e) {
+			log.error("OAuth2 로그인 처리 중 오류 발생", e);
+			response.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "OAuth2 로그인 처리 중 오류가 발생했습니다.");
 		}
-
-		tokenManagementService.createAndStoreTokens(userDetails, resp);
-
-		SocialLoginResponse dtoResp = createSocialLoginResponse(user);
-
-		setJsonResponse(resp, dtoResp);
-
-		redirectToFrontend(resp, tokenManagementService.getAccessToken(), dtoResp);
 	}
 
 	/**
@@ -176,10 +182,11 @@ public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
 	 * 클라이언트로 보낼 데이터를 json으로 가공
 	 * @param resp HttpServletResponse
 	 * @param socialLoginResponse 로그인 유저 정보
+	 * @param accessToken 액세스 토큰
 	 * @throws IOException 예외
 	 */
-	private void setJsonResponse(HttpServletResponse resp, SocialLoginResponse socialLoginResponse) throws IOException {
-		resp.setHeader("Authorization", "Bearer " + tokenManagementService.getAccessToken());
+	private void setJsonResponse(HttpServletResponse resp, SocialLoginResponse socialLoginResponse, String accessToken) throws IOException {
+		resp.setHeader("Authorization", "Bearer " + accessToken);
 		resp.setContentType("application/json;charset=UTF-8");
 		resp.setCharacterEncoding("UTF-8");
 

@@ -27,7 +27,11 @@ public class JwtTokenProvider {
 
     private Key key;
 
-    private final long tokenValidityInMilliseconds = 1000L * 60 * 60; // 1시간
+    // 액세스 토큰 유효기간: 1시간
+    private final long accessTokenValidityInMilliseconds = 1000L * 60 * 60;
+    
+    // 리프레시 토큰 유효기간: 7일
+    private final long refreshTokenValidityInMilliseconds = 1000L * 60 * 60 * 24 * 7;
 
     private final CustomUserDetailsService userDetailsService;
 
@@ -37,17 +41,41 @@ public class JwtTokenProvider {
         key = Keys.hmacShaKeyFor(keyBytes);
     }
 
-    public String createToken(String email, Long id, String userId) {
+    // 액세스 토큰 생성
+    public String createAccessToken(String email, Long id, String userId) {
         Date now = new Date();
-        Date validity = new Date(now.getTime() + tokenValidityInMilliseconds);
+        Date validity = new Date(now.getTime() + accessTokenValidityInMilliseconds);
 
         return Jwts.builder()
                 .setId(String.valueOf(id))
                 .setSubject(email)
+                .claim("userId", userId)
+                .claim("tokenType", "ACCESS")
                 .setIssuedAt(now)
                 .setExpiration(validity)
                 .signWith(key, SignatureAlgorithm.HS256)
                 .compact();
+    }
+
+    // 리프레시 토큰 생성
+    public String createRefreshToken(String email, Long id, String userId) {
+        Date now = new Date();
+        Date validity = new Date(now.getTime() + refreshTokenValidityInMilliseconds);
+
+        return Jwts.builder()
+                .setId(String.valueOf(id))
+                .setSubject(email)
+                .claim("userId", userId)
+                .claim("tokenType", "REFRESH")
+                .setIssuedAt(now)
+                .setExpiration(validity)
+                .signWith(key, SignatureAlgorithm.HS256)
+                .compact();
+    }
+
+    // 기존 메서드 (하위 호환성을 위해 유지)
+    public String createToken(String email, Long id, String userId) {
+        return createAccessToken(email, id, userId);
     }
 
     public Authentication getAuthentication(String token) {
@@ -62,6 +90,20 @@ public class JwtTokenProvider {
                 .getSubject();
     }
 
+    public Long getIdFromToken(String token) {
+        return Long.parseLong(Jwts.parserBuilder().setSigningKey(key).build()
+                .parseClaimsJws(token)
+                .getBody()
+                .getId());
+    }
+
+    public String getTokenType(String token) {
+        return Jwts.parserBuilder().setSigningKey(key).build()
+                .parseClaimsJws(token)
+                .getBody()
+                .get("tokenType", String.class);
+    }
+
     public boolean validateToken(String token) {
         try {
             Jwts.parserBuilder().setSigningKey(key).build().parseClaimsJws(token);
@@ -71,8 +113,33 @@ public class JwtTokenProvider {
         }
     }
 
+    public boolean isTokenExpired(String token) {
+        try {
+            Date expiration = Jwts.parserBuilder().setSigningKey(key).build()
+                    .parseClaimsJws(token)
+                    .getBody()
+                    .getExpiration();
+            return expiration.before(new Date());
+        } catch (JwtException | IllegalArgumentException e) {
+            return true;
+        }
+    }
+
     public String resolveToken(HttpServletRequest request) {
         String bearerToken = request.getHeader("Authorization");
         return (bearerToken != null && bearerToken.startsWith("Bearer ")) ? bearerToken.substring(7) : null;
+    }
+
+    // 토큰의 남은 유효시간을 밀리초로 반환
+    public long getTokenExpirationTime(String token) {
+        try {
+            Date expiration = Jwts.parserBuilder().setSigningKey(key).build()
+                    .parseClaimsJws(token)
+                    .getBody()
+                    .getExpiration();
+            return expiration.getTime() - new Date().getTime();
+        } catch (JwtException | IllegalArgumentException e) {
+            return 0;
+        }
     }
 }
