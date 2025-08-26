@@ -85,10 +85,22 @@ public class ObstacleReportController {
             @Parameter(description = "장애물 신고 정보 (위치, 종류, 설명, 이미지)", required = true)
             @Valid @RequestBody ObstacleReportRequestDto requestDto) {
         
-        Long userId = securityUtil.getCurrentUserId();
-        ObstacleReportResponseDto response = obstacleReportService.createObstacleReport(userId, requestDto);
+        log.info("장애물 신고 시도 - 사용자 ID: {}, 위치: ({}, {}), 종류: {}", 
+                securityUtil.getCurrentUserId(), requestDto.getLatitude(), requestDto.getLongitude(), requestDto.getReportType());
         
-        return ResponseEntity.status(HttpStatus.CREATED).body(response);
+        try {
+            Long userId = securityUtil.getCurrentUserId();
+            ObstacleReportResponseDto response = obstacleReportService.createObstacleReport(userId, requestDto);
+            
+            log.info("장애물 신고 성공 - 신고 ID: {}, 사용자 ID: {}, 위치: ({}, {})", 
+                    response.getId(), userId, requestDto.getLatitude(), requestDto.getLongitude());
+            
+            return ResponseEntity.status(HttpStatus.CREATED).body(response);
+        } catch (Exception e) {
+            log.error("장애물 신고 실패 - 사용자 ID: {}, 위치: ({}, {}), 오류: {}", 
+                    securityUtil.getCurrentUserId(), requestDto.getLatitude(), requestDto.getLongitude(), e.getMessage(), e);
+            throw e;
+        }
     }
 
     @GetMapping("/nearby")
@@ -130,8 +142,19 @@ public class ObstacleReportController {
             @Parameter(description = "주변 장애물 조회 조건 (위치, 반경)", required = true)
             @Valid @ModelAttribute NearbyObstaclesRequestDto requestDto) {
         
-        List<ObstacleReportResponseDto> obstacles = obstacleReportService.getNearbyObstacles(requestDto);
-        return ResponseEntity.ok(obstacles);
+        log.info("주변 장애물 조회 시도 - 위치: ({}, {}), 반경: {}km", 
+                requestDto.getLatitude(), requestDto.getLongitude(), requestDto.getRadius());
+        
+        try {
+            List<ObstacleReportResponseDto> obstacles = obstacleReportService.getNearbyObstacles(requestDto);
+            log.info("주변 장애물 조회 성공 - 위치: ({}, {}), 반경: {}km, 조회된 장애물 수: {}", 
+                    requestDto.getLatitude(), requestDto.getLongitude(), requestDto.getRadius(), obstacles.size());
+            return ResponseEntity.ok(obstacles);
+        } catch (Exception e) {
+            log.error("주변 장애물 조회 실패 - 위치: ({}, {}), 반경: {}km, 오류: {}", 
+                    requestDto.getLatitude(), requestDto.getLongitude(), requestDto.getRadius(), e.getMessage(), e);
+            throw e;
+        }
     }
 
     @GetMapping("/route")
@@ -179,9 +202,19 @@ public class ObstacleReportController {
             @Parameter(description = "끝점 경도", required = true, example = "126.9254")
             @RequestParam Double endLng) {
         
-        List<ObstacleReportResponseDto> obstacles = obstacleReportService.getObstaclesInRoute(
-                startLat, startLng, endLat, endLng);
-        return ResponseEntity.ok(obstacles);
+        log.info("경로 상 장애물 조회 시도 - 시작점: ({}, {}), 끝점: ({}, {})", startLat, startLng, endLat, endLng);
+        
+        try {
+            List<ObstacleReportResponseDto> obstacles = obstacleReportService.getObstaclesInRoute(
+                    startLat, startLng, endLat, endLng);
+            log.info("경로 상 장애물 조회 성공 - 시작점: ({}, {}), 끝점: ({}, {}), 조회된 장애물 수: {}", 
+                    startLat, startLng, endLat, endLng, obstacles.size());
+            return ResponseEntity.ok(obstacles);
+        } catch (Exception e) {
+            log.error("경로 상 장애물 조회 실패 - 시작점: ({}, {}), 끝점: ({}, {}), 오류: {}", 
+                    startLat, startLng, endLat, endLng, e.getMessage(), e);
+            throw e;
+        }
     }
 
     @GetMapping("/my-reports")

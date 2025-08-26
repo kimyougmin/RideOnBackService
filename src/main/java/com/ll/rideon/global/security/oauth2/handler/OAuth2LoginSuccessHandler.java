@@ -46,6 +46,19 @@ public class OAuth2LoginSuccessHandler extends SimpleUrlAuthenticationSuccessHan
 		Authentication authentication) throws IOException, ServletException {
 		log.info("OAuth2 로그인 성공");
 
+		// 환경변수 값 로깅
+		String kakaoClientId = System.getenv("KAKAO_CLIENT_ID");
+		String kakaoClientSecret = System.getenv("KAKAO_CLIENT_SECRET");
+		String naverClientId = System.getenv("NAVER_CLIENT_ID");
+		String naverClientSecret = System.getenv("NAVER_CLIENT_SECRET");
+		
+		log.info("=== OAuth2 환경변수 확인 ===");
+		log.info("KAKAO_CLIENT_ID: {}", kakaoClientId != null ? kakaoClientId.substring(0, Math.min(8, kakaoClientId.length())) + "..." : "NULL");
+		log.info("KAKAO_CLIENT_SECRET: {}", kakaoClientSecret != null ? kakaoClientSecret.substring(0, Math.min(8, kakaoClientSecret.length())) + "..." : "NULL");
+		log.info("NAVER_CLIENT_ID: {}", naverClientId != null ? naverClientId.substring(0, Math.min(8, naverClientId.length())) + "..." : "NULL");
+		log.info("NAVER_CLIENT_SECRET: {}", naverClientSecret != null ? naverClientSecret.substring(0, Math.min(8, naverClientSecret.length())) + "..." : "NULL");
+		log.info("==========================");
+
 		try {
 			OAuth2User oAuth2User = (OAuth2User) authentication.getPrincipal();
 			Users user = extractUserFromOAuth2User(oAuth2User);
@@ -120,6 +133,11 @@ public class OAuth2LoginSuccessHandler extends SimpleUrlAuthenticationSuccessHan
 				phone = String.valueOf(kakaoAccount.get("phone_number")).replace("+82 ", "0");
 				birthDate = String.valueOf(attributes.get("phone_number"));
 
+				// 프로필 이미지가 없는 경우 기본 이미지 설정
+				if (profileImg == null || profileImg.isEmpty()) {
+					profileImg = "https://via.placeholder.com/150x150/4A90E2/FFFFFF?text=User";
+				}
+
 				return Users.builder()
 					.id(userId)
 					.name(name)
@@ -135,6 +153,11 @@ public class OAuth2LoginSuccessHandler extends SimpleUrlAuthenticationSuccessHan
 				profileImg = (String)attributes.get("picture");
 				providerId = String.valueOf(attributes.get("sub"));
 
+				// 프로필 이미지가 없는 경우 기본 이미지 설정
+				if (profileImg == null || profileImg.isEmpty()) {
+					profileImg = "https://via.placeholder.com/150x150/4A90E2/FFFFFF?text=User";
+				}
+
 				return Users.builder()
 					.id(userId)
 					.name(name)
@@ -148,6 +171,11 @@ public class OAuth2LoginSuccessHandler extends SimpleUrlAuthenticationSuccessHan
 				email = (String)response.get("email");
 				profileImg = (String)response.get("profile_image");
 				providerId = (String)response.get("id");
+
+				// 프로필 이미지가 없는 경우 기본 이미지 설정
+				if (profileImg == null || profileImg.isEmpty()) {
+					profileImg = "https://via.placeholder.com/150x150/4A90E2/FFFFFF?text=User";
+				}
 
 				return Users.builder()
 					.id(userId)

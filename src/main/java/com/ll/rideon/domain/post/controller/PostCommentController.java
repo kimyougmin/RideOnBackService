@@ -14,6 +14,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
@@ -25,6 +26,7 @@ import org.springframework.web.bind.annotation.*;
 @RestController
 @RequestMapping("/api/posts/{postId}/comments")
 @RequiredArgsConstructor
+@Slf4j
 @Tag(name = "💬 게시글 댓글", description = "게시글 댓글 작성, 조회, 수정, 삭제 API")
 public class PostCommentController {
 
@@ -49,8 +51,16 @@ public class PostCommentController {
             @Parameter(description = "댓글 작성 정보", required = true)
             @Validated @RequestBody PostCommentCreateRequestDto requestDto) {
         
-        PostCommentResponseDto responseDto = postCommentService.createComment(postId, requestDto);
-        return ResponseEntity.status(HttpStatus.CREATED).body(responseDto);
+        log.info("댓글 작성 시도 - 게시글 ID: {}, 내용: {}", postId, requestDto.getContent());
+        
+        try {
+            PostCommentResponseDto responseDto = postCommentService.createComment(postId, requestDto);
+            log.info("댓글 작성 성공 - 댓글 ID: {}, 게시글 ID: {}", responseDto.getId(), postId);
+            return ResponseEntity.status(HttpStatus.CREATED).body(responseDto);
+        } catch (Exception e) {
+            log.error("댓글 작성 실패 - 게시글 ID: {}, 오류: {}", postId, e.getMessage(), e);
+            throw e;
+        }
     }
 
     @GetMapping("/{commentId}")

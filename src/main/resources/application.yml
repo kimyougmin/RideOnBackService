@@ -28,7 +28,7 @@ spring:
                     kakao:
                         clientId: ${KAKAO_CLIENT_ID}
                         client-secret: ${KAKAO_CLIENT_SECRET}
-                        redirect-uri: '{baseUrl}/{action}/oauth2/code/{registrationId}'
+                        redirect-uri: '{baseUrl}/login/oauth2/code/{registrationId}'
                         authorization-grant-type: authorization_code
                         client-authentication-method: client_secret_post
                         client-name: Kakao
@@ -36,9 +36,6 @@ spring:
                             - profile_nickname
                             - profile_image
                             - account_email
-                            - phone_number
-                            - birthday
-                            - birthyear
                     google:
                         client-id: ${GOOGLE_CLIENT_ID}
                         client-secret: ${GOOGLE_CLIENT_SECRET}

@@ -14,6 +14,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -27,6 +28,7 @@ import java.util.Map;
 @RestController
 @RequestMapping("/api/auth")
 @RequiredArgsConstructor
+@Slf4j
 @Tag(name = "🔐 인증", description = "사용자 인증 관련 API (로그인, 회원가입, 토큰 관리)")
 public class AuthController {
 
@@ -84,28 +86,42 @@ public class AuthController {
         String password = request.get("password");
         String name = request.get("name");
 
-        // 이미 존재하는 사용자인지 확인
-        if (userRepository.findByEmail(email).isPresent()) {
+        log.info("회원가입 시도 - 이메일: {}", email);
+
+        try {
+            // 이미 존재하는 사용자인지 확인
+            if (userRepository.findByEmail(email).isPresent()) {
+                log.warn("회원가입 실패 - 중복된 이메일: {}", email);
+                Map<String, Object> response = new HashMap<>();
+                response.put("error", "이미 존재하는 이메일입니다.");
+                return ResponseEntity.badRequest().body(response);
+            }
+
+            // 새 사용자 생성 (기본 프로필 이미지 설정)
+            Users user = Users.builder()
+                    .email(email)
+                    .password(passwordEncoder.encode(password))
+                    .name(name)
+                    .profileImage("https://via.placeholder.com/150x150/4A90E2/FFFFFF?text=User")
+                    .build();
+
+            Users savedUser = userRepository.save(user);
+
+            log.info("회원가입 성공 - 사용자 ID: {}, 이메일: {}", savedUser.getId(), email);
+
             Map<String, Object> response = new HashMap<>();
-            response.put("error", "이미 존재하는 이메일입니다.");
+            response.put("message", "회원가입이 완료되었습니다.");
+            response.put("userId", savedUser.getId());
+            response.put("email", savedUser.getEmail());
+
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            log.error("회원가입 실패 - 이메일: {}, 오류: {}", email, e.getMessage(), e);
+            Map<String, Object> response = new HashMap<>();
+            response.put("error", "회원가입 처리 중 오류가 발생했습니다.");
+            response.put("message", e.getMessage());
             return ResponseEntity.badRequest().body(response);
         }
-
-        // 새 사용자 생성
-        Users user = Users.builder()
-                .email(email)
-                .password(passwordEncoder.encode(password))
-                .name(name)
-                .build();
-
-        Users savedUser = userRepository.save(user);
-
-        Map<String, Object> response = new HashMap<>();
-        response.put("message", "회원가입이 완료되었습니다.");
-        response.put("userId", savedUser.getId());
-        response.put("email", savedUser.getEmail());
-
-        return ResponseEntity.ok(response);
     }
 
     @PostMapping("/login")
@@ -163,6 +179,8 @@ public class AuthController {
         String email = request.get("email");
         String password = request.get("password");
 
+        log.info("로그인 시도 - 이메일: {}", email);
+
         try {
             Authentication authentication = authenticationManager.authenticate(
                     new UsernamePasswordAuthenticationToken(email, password)
@@ -178,6 +196,8 @@ public class AuthController {
             // 리프레시 토큰 저장
             tokenManagementService.saveRefreshToken(user.getEmail(), refreshToken);
 
+            log.info("로그인 성공 - 사용자 ID: {}, 이메일: {}", user.getId(), email);
+
             Map<String, Object> response = new HashMap<>();
             response.put("message", "로그인이 성공했습니다.");
             response.put("userId", user.getId());
@@ -190,6 +210,7 @@ public class AuthController {
 
             return ResponseEntity.ok(response);
         } catch (Exception e) {
+            log.warn("로그인 실패 - 이메일: {}, 오류: {}", email, e.getMessage());
             Map<String, Object> response = new HashMap<>();
             response.put("error", "로그인에 실패했습니다.");
             response.put("message", "이메일 또는 비밀번호를 확인해주세요.");
@@ -249,29 +270,43 @@ public class AuthController {
             @RequestBody Map<String, String> request) {
         String refreshToken = request.get("refreshToken");
 
+        log.info("토큰 갱신 시도");
+
         if (refreshToken == null || refreshToken.isEmpty()) {
+            log.warn("토큰 갱신 실패 - 리프레시 토큰이 없음");
             Map<String, Object> response = new HashMap<>();
             response.put("error", "리프레시 토큰이 필요합니다.");
             return ResponseEntity.badRequest().body(response);
         }
 
-        // 새로운 액세스 토큰 생성
-        String newAccessToken = tokenManagementService.refreshAccessToken(refreshToken);
+        try {
+            // 새로운 액세스 토큰 생성
+            String newAccessToken = tokenManagementService.refreshAccessToken(refreshToken);
 
-        if (newAccessToken == null) {
+            if (newAccessToken == null) {
+                log.warn("토큰 갱신 실패 - 유효하지 않은 리프레시 토큰");
+                Map<String, Object> response = new HashMap<>();
+                response.put("error", "토큰 갱신에 실패했습니다.");
+                response.put("message", "리프레시 토큰이 유효하지 않거나 만료되었습니다.");
+                return ResponseEntity.badRequest().body(response);
+            }
+
+            log.info("토큰 갱신 성공");
+
             Map<String, Object> response = new HashMap<>();
-            response.put("error", "토큰 갱신에 실패했습니다.");
-            response.put("message", "리프레시 토큰이 유효하지 않거나 만료되었습니다.");
+            response.put("message", "토큰이 성공적으로 갱신되었습니다.");
+            response.put("accessToken", newAccessToken);
+            response.put("tokenType", "Bearer");
+            response.put("expiresIn", 3600); // 1시간 (초 단위)
+
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            log.error("토큰 갱신 실패 - 오류: {}", e.getMessage(), e);
+            Map<String, Object> response = new HashMap<>();
+            response.put("error", "토큰 갱신 처리 중 오류가 발생했습니다.");
+            response.put("message", e.getMessage());
             return ResponseEntity.badRequest().body(response);
         }
-
-        Map<String, Object> response = new HashMap<>();
-        response.put("message", "토큰이 성공적으로 갱신되었습니다.");
-        response.put("accessToken", newAccessToken);
-        response.put("tokenType", "Bearer");
-        response.put("expiresIn", 3600); // 1시간 (초 단위)
-
-        return ResponseEntity.ok(response);
     }
 
     @PostMapping("/logout")
@@ -314,6 +349,8 @@ public class AuthController {
             @ApiResponse(responseCode = "401", description = "인증 필요")
     })
     public ResponseEntity<Map<String, Object>> logout() {
+        log.info("로그아웃 시도");
+        
         try {
             // 현재 사용자 이메일 가져오기
             String currentUserEmail = SecurityUtil.getCurrentUserEmail();
@@ -321,11 +358,14 @@ public class AuthController {
             // 리프레시 토큰 삭제
             tokenManagementService.logout(currentUserEmail);
             
+            log.info("로그아웃 성공 - 사용자: {}", currentUserEmail);
+            
             Map<String, Object> response = new HashMap<>();
             response.put("message", "로그아웃이 완료되었습니다.");
             
             return ResponseEntity.ok(response);
         } catch (Exception e) {
+            log.error("로그아웃 실패 - 오류: {}", e.getMessage(), e);
             Map<String, Object> response = new HashMap<>();
             response.put("error", "로그아웃 처리 중 오류가 발생했습니다.");
             response.put("message", e.getMessage());

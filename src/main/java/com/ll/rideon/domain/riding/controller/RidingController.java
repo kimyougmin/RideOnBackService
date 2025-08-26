@@ -17,6 +17,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
@@ -30,6 +31,7 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/riding")
 @RequiredArgsConstructor
+@Slf4j
 @Tag(name = "🚴‍♂️ 라이딩 추적", description = "실시간 라이딩 세션 관리 및 위치 추적 API")
 public class RidingController {
 
@@ -77,9 +79,19 @@ public class RidingController {
             @Parameter(description = "라이딩 세션 생성 정보 (현재는 빈 객체)", required = true)
             @Validated @RequestBody RidingSessionCreateRequestDto requestDto) {
         
-        Long userId = SecurityUtil.getCurrentUserId();
-        RidingSessionResponseDto responseDto = ridingService.createRidingSession(userId, requestDto);
-        return ResponseEntity.status(HttpStatus.CREATED).body(responseDto);
+        log.info("라이딩 세션 생성 시도 - 사용자 ID: {}", SecurityUtil.getCurrentUserId());
+        
+        try {
+            Long userId = SecurityUtil.getCurrentUserId();
+            RidingSessionResponseDto responseDto = ridingService.createRidingSession(userId, requestDto);
+            
+            log.info("라이딩 세션 생성 성공 - 세션 ID: {}, 사용자 ID: {}", responseDto.getId(), userId);
+            
+            return ResponseEntity.status(HttpStatus.CREATED).body(responseDto);
+        } catch (Exception e) {
+            log.error("라이딩 세션 생성 실패 - 사용자 ID: {}, 오류: {}", SecurityUtil.getCurrentUserId(), e.getMessage(), e);
+            throw e;
+        }
     }
 
     @PostMapping("/sessions/{sessionId}/location")

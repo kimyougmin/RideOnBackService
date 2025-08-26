@@ -14,6 +14,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
@@ -25,6 +26,7 @@ import org.springframework.web.bind.annotation.*;
 @RestController
 @RequestMapping("/api/posts")
 @RequiredArgsConstructor
+@Slf4j
 @Tag(name = "📝 커뮤니티 게시글", description = "게시글 작성, 조회, 수정, 삭제 API")
 public class PostController {
 
@@ -71,10 +73,20 @@ public class PostController {
             @Parameter(description = "게시글 작성 정보 (제목, 내용, 이미지 URL)", required = true)
             @Validated @RequestBody PostCreateRequestDto requestDto) {
         
-        // 임시로 고정된 userId 사용
-        Long userId = 1L;
-        PostResponseDto responseDto = postService.createPost(requestDto, userId);
-        return ResponseEntity.status(HttpStatus.CREATED).body(responseDto);
+        log.info("게시글 작성 시도 - 제목: {}", requestDto.getTitle());
+        
+        try {
+            // 임시로 고정된 userId 사용
+            Long userId = 1L;
+            PostResponseDto responseDto = postService.createPost(requestDto, userId);
+            
+            log.info("게시글 작성 성공 - 게시글 ID: {}, 제목: {}", responseDto.getId(), requestDto.getTitle());
+            
+            return ResponseEntity.status(HttpStatus.CREATED).body(responseDto);
+        } catch (Exception e) {
+            log.error("게시글 작성 실패 - 제목: {}, 오류: {}", requestDto.getTitle(), e.getMessage(), e);
+            throw e;
+        }
     }
 
     @GetMapping("/{postId}")
@@ -113,8 +125,16 @@ public class PostController {
     public ResponseEntity<PostResponseDto> getPost(
             @Parameter(description = "조회할 게시글의 ID", required = true, example = "1")
             @PathVariable Long postId) {
-        PostResponseDto responseDto = postService.getPost(postId);
-        return ResponseEntity.ok(responseDto);
+        log.info("게시글 조회 시도 - 게시글 ID: {}", postId);
+        
+        try {
+            PostResponseDto responseDto = postService.getPost(postId);
+            log.info("게시글 조회 성공 - 게시글 ID: {}, 제목: {}", postId, responseDto.getTitle());
+            return ResponseEntity.ok(responseDto);
+        } catch (Exception e) {
+            log.error("게시글 조회 실패 - 게시글 ID: {}, 오류: {}", postId, e.getMessage(), e);
+            throw e;
+        }
     }
 
     @GetMapping
@@ -156,8 +176,16 @@ public class PostController {
     public ResponseEntity<Page<PostResponseDto>> getAllPosts(
             @Parameter(description = "페이지 정보 (page: 페이지 번호, size: 페이지 크기, 기본값: size=10)")
             @PageableDefault(size = 10) Pageable pageable) {
-        Page<PostResponseDto> posts = postService.getAllPosts(pageable);
-        return ResponseEntity.ok(posts);
+        log.info("게시글 목록 조회 시도 - 페이지: {}, 크기: {}", pageable.getPageNumber(), pageable.getPageSize());
+        
+        try {
+            Page<PostResponseDto> posts = postService.getAllPosts(pageable);
+            log.info("게시글 목록 조회 성공 - 총 게시글 수: {}, 현재 페이지: {}", posts.getTotalElements(), pageable.getPageNumber());
+            return ResponseEntity.ok(posts);
+        } catch (Exception e) {
+            log.error("게시글 목록 조회 실패 - 페이지: {}, 오류: {}", pageable.getPageNumber(), e.getMessage(), e);
+            throw e;
+        }
     }
 
     @GetMapping("/user/{userId}")
@@ -174,8 +202,16 @@ public class PostController {
             @PathVariable Long userId,
             @Parameter(description = "페이지 정보 (기본값: size=10)")
             @PageableDefault(size = 10) Pageable pageable) {
-        Page<PostResponseDto> posts = postService.getPostsByUserId(userId, pageable);
-        return ResponseEntity.ok(posts);
+        log.info("사용자별 게시글 조회 시도 - 사용자 ID: {}, 페이지: {}", userId, pageable.getPageNumber());
+        
+        try {
+            Page<PostResponseDto> posts = postService.getPostsByUserId(userId, pageable);
+            log.info("사용자별 게시글 조회 성공 - 사용자 ID: {}, 총 게시글 수: {}", userId, posts.getTotalElements());
+            return ResponseEntity.ok(posts);
+        } catch (Exception e) {
+            log.error("사용자별 게시글 조회 실패 - 사용자 ID: {}, 오류: {}", userId, e.getMessage(), e);
+            throw e;
+        }
     }
 
     @PutMapping("/{postId}")
@@ -198,10 +234,20 @@ public class PostController {
             @Parameter(description = "게시글 수정 정보", required = true)
             @Validated @RequestBody PostUpdateRequestDto requestDto) {
         
-        // 임시로 고정된 userId 사용
-        Long userId = 1L;
-        PostResponseDto responseDto = postService.updatePost(postId, requestDto, userId);
-        return ResponseEntity.ok(responseDto);
+        log.info("게시글 수정 시도 - 게시글 ID: {}, 제목: {}", postId, requestDto.getTitle());
+        
+        try {
+            // 임시로 고정된 userId 사용
+            Long userId = 1L;
+            PostResponseDto responseDto = postService.updatePost(postId, requestDto, userId);
+            
+            log.info("게시글 수정 성공 - 게시글 ID: {}, 제목: {}", postId, requestDto.getTitle());
+            
+            return ResponseEntity.ok(responseDto);
+        } catch (Exception e) {
+            log.error("게시글 수정 실패 - 게시글 ID: {}, 제목: {}, 오류: {}", postId, requestDto.getTitle(), e.getMessage(), e);
+            throw e;
+        }
     }
 
     @DeleteMapping("/{postId}")
@@ -220,9 +266,19 @@ public class PostController {
             @Parameter(description = "게시글 ID", required = true, example = "1")
             @PathVariable Long postId) {
         
-        // 임시로 고정된 userId 사용
-        Long userId = 1L;
-        postService.deletePost(postId, userId);
-        return ResponseEntity.noContent().build();
+        log.info("게시글 삭제 시도 - 게시글 ID: {}", postId);
+        
+        try {
+            // 임시로 고정된 userId 사용
+            Long userId = 1L;
+            postService.deletePost(postId, userId);
+            
+            log.info("게시글 삭제 성공 - 게시글 ID: {}", postId);
+            
+            return ResponseEntity.noContent().build();
+        } catch (Exception e) {
+            log.error("게시글 삭제 실패 - 게시글 ID: {}, 오류: {}", postId, e.getMessage(), e);
+            throw e;
+        }
     }
 } 

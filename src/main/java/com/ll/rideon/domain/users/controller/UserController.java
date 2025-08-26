@@ -9,6 +9,7 @@ import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -20,6 +21,7 @@ import java.util.Map;
 @RestController
 @RequestMapping("/api/users")
 @RequiredArgsConstructor
+@Slf4j
 public class UserController {
 
     private final UserService userService;
@@ -29,10 +31,19 @@ public class UserController {
     @ApiResponse(responseCode = "401", description = "잘못된 자격 증명", content = @Content)
     @PostMapping("/register")
     public ResponseEntity<?> register(@RequestBody UserRegisterDto dto) {
-        userService.register(dto);
-        Map<String, String> response = new HashMap<>();
-        response.put("res", "회원가입 성공");
-        return ResponseEntity.ok(response);
+        log.info("회원가입 시도 - 이메일: {}", dto.getEmail());
+        
+        try {
+            userService.register(dto);
+            log.info("회원가입 성공 - 이메일: {}", dto.getEmail());
+            
+            Map<String, String> response = new HashMap<>();
+            response.put("res", "회원가입 성공");
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            log.error("회원가입 실패 - 이메일: {}, 오류: {}", dto.getEmail(), e.getMessage(), e);
+            throw e;
+        }
     }
 
     @Operation(summary = "로그인", description = "이메일과 비밀번호로 로그인하고 JWT 토큰과 사용자 정보를 반환합니다.")
@@ -40,7 +51,15 @@ public class UserController {
     @ApiResponse(responseCode = "401", description = "잘못된 자격 증명", content = @Content)
     @PostMapping("/login")
     public ResponseEntity<UserLoginResponseDto> login(@RequestBody UserLoginRequestDto dto) {
-        UserLoginResponseDto response = userService.login(dto);
-        return ResponseEntity.ok(response);
+        log.info("로그인 시도 - 이메일: {}", dto.getEmail());
+        
+        try {
+            UserLoginResponseDto response = userService.login(dto);
+            log.info("로그인 성공 - 이메일: {}", dto.getEmail());
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            log.error("로그인 실패 - 이메일: {}, 오류: {}", dto.getEmail(), e.getMessage(), e);
+            throw e;
+        }
     }
 }

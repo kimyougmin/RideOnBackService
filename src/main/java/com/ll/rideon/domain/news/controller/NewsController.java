@@ -10,6 +10,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -19,6 +20,7 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/news")
 @RequiredArgsConstructor
+@Slf4j
 public class NewsController {
 
     private final NewsService newsService;
@@ -62,7 +64,16 @@ public class NewsController {
     })
     @GetMapping("/latest")
     public ResponseEntity<List<NewsResponseDto>> getLatestNews() {
-        return ResponseEntity.ok(newsService.fetchNews("date"));
+        log.info("최신 뉴스 조회 시도");
+        
+        try {
+            List<NewsResponseDto> news = newsService.fetchNews("date");
+            log.info("최신 뉴스 조회 성공 - 뉴스 수: {}", news.size());
+            return ResponseEntity.ok(news);
+        } catch (Exception e) {
+            log.error("최신 뉴스 조회 실패 - 오류: {}", e.getMessage(), e);
+            throw e;
+        }
     }
 
     @Operation(
@@ -104,6 +115,15 @@ public class NewsController {
     })
     @GetMapping("/popular")
     public ResponseEntity<List<NewsResponseDto>> getPopularNews() {
-        return ResponseEntity.ok(newsService.fetchNews("sim"));
+        log.info("인기 뉴스 조회 시도");
+        
+        try {
+            List<NewsResponseDto> news = newsService.fetchNews("sim");
+            log.info("인기 뉴스 조회 성공 - 뉴스 수: {}", news.size());
+            return ResponseEntity.ok(news);
+        } catch (Exception e) {
+            log.error("인기 뉴스 조회 실패 - 오류: {}", e.getMessage(), e);
+            throw e;
+        }
     }
 }
