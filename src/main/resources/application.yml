@@ -16,6 +16,11 @@ spring:
             ddl-auto: validate
         properties:
             dialect: org.hibernate.dialect.PostgreSQLDialect
+    servlet:
+        multipart:
+            max-file-size: 10MB
+            max-request-size: 10MB
+            enabled: true
     flyway:
         enabled: true
         locations: classpath:db/migration
@@ -112,3 +117,9 @@ site:
         frontend: "http://localhost:3000"
 app:
     frontend-url: "http://localhost:3000"
+
+# 파일 업로드 설정
+file:
+    upload:
+        path: /uploads
+        profile: /uploads/profile

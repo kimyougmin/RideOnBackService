@@ -3,8 +3,8 @@ package com.ll.rideon.global.security.oauth2.service;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.ll.rideon.domain.users.entity.Users;
-import com.ll.rideon.domain.users.repository.UserRepository;
+import com.ll.rideon.domain.members.entity.Members;
+import com.ll.rideon.domain.members.repository.UserRepository;
 import com.ll.rideon.global.security.oauth2.dto.OAuthAttributes;
 
 import lombok.RequiredArgsConstructor;
@@ -15,24 +15,24 @@ public class OAuth2UserSaveService {
 	private final UserRepository userRepository;
 
 	@Transactional
-	public Users saveIfNotExist(OAuthAttributes attributes) {
-		Users user = null;
+	public Members saveIfNotExist(OAuthAttributes attributes) {
+		Members member = null;
 
 		// userId로 사용자 조회
-		if (attributes.getUserId() != null) {
-			user = userRepository.findByUserId(attributes.getUserId()).orElse(null);
+		if (attributes.getId() != null) {
+			member = userRepository.findById(attributes.getId()).orElse(null);
 		}
 
 		// 이메일로 사용자 조회
-		if (user == null && attributes.getEmail() != null) {
-			user = userRepository.findByEmail(attributes.getEmail()).orElse(null);
+		if (member == null && attributes.getEmail() != null) {
+			member = userRepository.findByEmail(attributes.getEmail()).orElse(null);
 		}
 
-		if (user == null) {
-			user = attributes.toEntity();
-			user = userRepository.save(user);
+		if (member == null) {
+			member = attributes.toEntity();
+			member = userRepository.save(member);
 		}
 
-		return user;
+		return member;
 	}
 }

@@ -1,8 +1,8 @@
 package com.ll.rideon.global.security.oauth2.handler;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.ll.rideon.domain.users.dto.SocialLoginResponse;
-import com.ll.rideon.domain.users.entity.Users;
+import com.ll.rideon.domain.members.dto.SocialLoginResponse;
+import com.ll.rideon.domain.members.entity.Members;
 import com.ll.rideon.global.security.custom.CustomUserDetails;
 import com.ll.rideon.global.security.jwt.JwtTokenProvider;
 import com.ll.rideon.global.security.jwt.service.TokenManagementService;
@@ -61,11 +61,11 @@ public class OAuth2LoginSuccessHandler extends SimpleUrlAuthenticationSuccessHan
 
 		try {
 			OAuth2User oAuth2User = (OAuth2User) authentication.getPrincipal();
-			Users user = extractUserFromOAuth2User(oAuth2User);
+			Members user = extractUserFromOAuth2User(oAuth2User);
 
 			// 사용자 저장 또는 업데이트 (OAuth2의 경우 별도 처리 필요)
 			// 여기서는 간단히 user를 그대로 사용하지만, 실제로는 OAuth2 사용자 정보를 적절히 처리해야 합니다
-			Users savedUser = user;
+			Members savedUser = user;
 
 			CustomUserDetails userDetails = new CustomUserDetails(savedUser);
 
@@ -97,7 +97,7 @@ public class OAuth2LoginSuccessHandler extends SimpleUrlAuthenticationSuccessHan
 	 * @param oAuth2User 소셜 유저
 	 * @return {@link Users}
 	 */
-	private Users extractUserFromOAuth2User(OAuth2User oAuth2User) {
+	private Members extractUserFromOAuth2User(OAuth2User oAuth2User) {
 		try {
 			Map<String, Object> attributes = oAuth2User.getAttributes();
 			String registrationId = null;
@@ -114,7 +114,7 @@ public class OAuth2LoginSuccessHandler extends SimpleUrlAuthenticationSuccessHan
 				throw new OAuth2AuthenticationException("지원하지 않는 OAuth2 제공자입니다.");
 			}
 
-			Long userId = (Long)attributes.get("id");
+			Long memberId = (Long)attributes.get("id");
 			String name = null;
 			String email = null;
 			String profileImg = null;
@@ -138,13 +138,13 @@ public class OAuth2LoginSuccessHandler extends SimpleUrlAuthenticationSuccessHan
 					profileImg = "https://via.placeholder.com/150x150/4A90E2/FFFFFF?text=User";
 				}
 
-				return Users.builder()
-					.id(userId)
+				return Members.builder()
+					.id(memberId)
 					.name(name)
 					.email(email)
 					.profileImage(profileImg)
-					.userId(providerId)
-					.birthDate(birthDate)
+                    
+                    .birthDate(birthDate != null && !birthDate.isBlank() ? java.time.LocalDate.parse(birthDate) : null)
 					.phone(phone)
 					.build();
 			} else if ("google".equals(registrationId)) {
@@ -158,12 +158,12 @@ public class OAuth2LoginSuccessHandler extends SimpleUrlAuthenticationSuccessHan
 					profileImg = "https://via.placeholder.com/150x150/4A90E2/FFFFFF?text=User";
 				}
 
-				return Users.builder()
-					.id(userId)
+				return Members.builder()
+					.id(memberId)
 					.name(name)
 					.email(email)
 					.profileImage(profileImg)
-					.userId(providerId)
+                    
 					.build();
 			} else {
 				Map<String, Object> response = (Map<String, Object>)attributes.get("response");
@@ -177,12 +177,12 @@ public class OAuth2LoginSuccessHandler extends SimpleUrlAuthenticationSuccessHan
 					profileImg = "https://via.placeholder.com/150x150/4A90E2/FFFFFF?text=User";
 				}
 
-				return Users.builder()
-					.id(userId)
+				return Members.builder()
+					.id(memberId)
 					.name(name)
 					.email(email)
 					.profileImage(profileImg)
-					.userId(providerId)
+                    
 					.build();
 			}
 
@@ -196,13 +196,13 @@ public class OAuth2LoginSuccessHandler extends SimpleUrlAuthenticationSuccessHan
 	 * @param user 소셜 유저
 	 * @return {@link SocialLoginResponse}
 	 */
-	private SocialLoginResponse createSocialLoginResponse(Users user) {
+	private SocialLoginResponse createSocialLoginResponse(Members member) {
 		return SocialLoginResponse.builder()
-			.id(user.getId())
-			.name(user.getName())
-			.email(user.getEmail())
-			.profileImage(user.getProfileImage())
-			.phone(user.getPhone())
+			.id(member.getId())
+			.name(member.getName())
+			.email(member.getEmail())
+			.profileImage(member.getProfileImage())
+			.phone(member.getPhone())
 			.build();
 	}
 

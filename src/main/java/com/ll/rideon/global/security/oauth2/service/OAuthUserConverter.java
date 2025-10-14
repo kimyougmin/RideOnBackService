@@ -49,7 +49,7 @@ public class OAuthUserConverter {
 		return OAuthAttributes.builder()
 			.name((String)properties.get("nickname"))
 			.profileImage((String)properties.get("profile_image"))
-			.userId(String.valueOf(attributes.get(userNameAttributeName)))
+			.id((Long) attributes.get(userNameAttributeName))
 			.email((String) kakaoAccount.get("email"))
 			.phone((String) kakaoAccount.get("phone_number"))
 			.birthDate((String) kakaoAccount.get("birthyear") + "-" + month + "-" + day)
@@ -69,7 +69,7 @@ public class OAuthUserConverter {
 			.name((String)attributes.get("name"))
 			.profileImage((String)attributes.get("picture"))
 			.email((String)attributes.get("email"))
-			.userId(String.valueOf(attributes.get(userNameAttributeName)))
+			.id((Long) attributes.get(userNameAttributeName))
 			.provider("google")
 			.attributes(attributes)
 			.build();
@@ -87,7 +87,7 @@ public class OAuthUserConverter {
 			.name((String)response.get("name"))
 			.profileImage((String)response.get("profile_image"))
 			.email((String)response.get("email"))
-			.userId((String)response.get("id"))
+			.id((Long)response.get("id"))
 			.provider("naver")
 			.attributes(attributes)
 			.build();

@@ -4,8 +4,8 @@ import java.time.LocalDateTime;
 import java.util.Map;
 import java.util.UUID;
 
-import com.ll.rideon.domain.users.entity.AuthProvider;
-import com.ll.rideon.domain.users.entity.Users;
+import com.ll.rideon.domain.members.entity.ProviderType;
+import com.ll.rideon.domain.members.entity.Members;
 
 import lombok.Builder;
 import lombok.Getter;
@@ -28,7 +28,7 @@ public class OAuthAttributes {
 	/**
 	 * 소셜 ID
 	 */
-	private final String userId;
+	private final Long id;
 	/**
 	 * 이메일
 	 */
@@ -54,17 +54,17 @@ public class OAuthAttributes {
 	 *
 	 * @param name 이름
 	 * @param profileImage 프로필 사진
-	 * @param userId 소셜 ID
+	 * @param id 소셜 ID
 	 * @param email 이메일
 	 * @param provider 소셜 로그인 제공자
 	 * @param attributes 소셜 로그인 유저 정보
 	 */
 	@Builder
-	public OAuthAttributes(String name, String profileImage, String userId, String email, String provider, String phone, String birthDate,
+	public OAuthAttributes(String name, String profileImage, Long id, String email, String provider, String phone, String birthDate,
 		Map<String, Object> attributes) {
 		this.name = name;
 		this.profileImage = profileImage;
-		this.userId = userId;
+		this.id = id;
 		this.email = email;
 		this.phone = phone;
 		this.birthDate = birthDate;
@@ -74,24 +74,23 @@ public class OAuthAttributes {
 
 	/**
 	 * 엔티티로 변환
-	 * @return {@link Users}
+	 * @return {@link Members}
 	 */
-	public Users toEntity() {
+	public Members toEntity() {
 		String userEmail = email;
 		if (userEmail == null) {
-			userEmail = userId + "@" + provider + ".com";
+			userEmail = id + "@" + provider + ".com";
 		}
 
-		return Users.builder()
+		return Members.builder()
 			.name(name)
 			.email(userEmail)
 			.password(UUID.randomUUID().toString())
 			.phone(phone.replace("+82 ", "0"))
 			.profileImage(profileImage)
-			.birthDate(birthDate)
-			.userId(userId)
+            .birthDate(birthDate != null && !birthDate.isBlank() ? java.time.LocalDate.parse(birthDate) : null)
 			.createdAt(LocalDateTime.now())
-			.provider(AuthProvider.valueOf(provider))
+			.provider(ProviderType.valueOf(provider))
 			.build();
 	}
 }

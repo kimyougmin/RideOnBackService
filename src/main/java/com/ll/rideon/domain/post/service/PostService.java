@@ -29,10 +29,9 @@ public class PostService {
         
         try {
             Post post = Post.builder()
-                    .userId(userId)
+                    .memberId(userId)
                     .title(requestDto.getTitle())
                     .content(requestDto.getContent())
-                    .image(requestDto.getImage())
                     .build();
 
             Post savedPost = postRepository.save(post);
@@ -68,7 +67,7 @@ public class PostService {
     }
 
     public Page<PostResponseDto> getPostsByUserId(Long userId, Pageable pageable) {
-        Page<Post> posts = postRepository.findByUserIdOrderByCreatedAtDesc(userId, pageable);
+        Page<Post> posts = postRepository.findByMemberIdOrderByCreatedAtDesc(userId, pageable);
         return posts.map(PostResponseDto::from);
     }
 
@@ -77,11 +76,11 @@ public class PostService {
         Post post = postRepository.findById(postId)
                 .orElseThrow(() -> new IllegalArgumentException("게시글을 찾을 수 없습니다. ID: " + postId));
 
-        if (!post.getUserId().equals(userId)) {
+        if (!post.getMemberId().equals(userId)) {
             throw new IllegalArgumentException("게시글을 수정할 권한이 없습니다.");
         }
 
-        post.update(requestDto.getTitle(), requestDto.getContent(), requestDto.getImage());
+        post.update(requestDto.getTitle(), requestDto.getContent());
         
         // 메트릭 기록
         metricsService.incrementPostUpdated();
@@ -95,7 +94,7 @@ public class PostService {
         Post post = postRepository.findById(postId)
                 .orElseThrow(() -> new IllegalArgumentException("게시글을 찾을 수 없습니다. ID: " + postId));
 
-        if (!post.getUserId().equals(userId)) {
+        if (!post.getMemberId().equals(userId)) {
             throw new IllegalArgumentException("게시글을 삭제할 권한이 없습니다.");
         }
 

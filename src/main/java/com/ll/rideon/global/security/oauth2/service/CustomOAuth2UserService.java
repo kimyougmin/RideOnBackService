@@ -14,7 +14,7 @@ import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.ll.rideon.domain.users.entity.Users;
+import com.ll.rideon.domain.members.entity.Members;
 import com.ll.rideon.global.security.oauth2.dto.OAuthAttributes;
 
 import lombok.RequiredArgsConstructor;
@@ -49,16 +49,16 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
 			OAuthAttributes attributes = oAuthUserConverter.convert(registrationId, userNameAttributeName,
 				oauth2User.getAttributes());
 
-			Users user = oAuth2UserSaveService.saveIfNotExist(attributes);
+			Members member = oAuth2UserSaveService.saveIfNotExist(attributes);
 			if (log.isInfoEnabled()) {
-				log.info("OAuth2 로그인 사용자 정보: id={}, email={}, name={}", user.getId(), user.getEmail(), user.getName());
+				log.info("OAuth2 로그인 사용자 정보: id={}, email={}, name={}", member.getId(), member.getEmail(), member.getName());
 			}
 
 			Map<String, Object> updatedAttributes = new HashMap<>(attributes.getAttributes());
-			updatedAttributes.put("id", user.getId());
+			updatedAttributes.put("id", member.getId());
 
-			return new DefaultOAuth2User(
-				Collections.singleton(new SimpleGrantedAuthority(user.getUserId())),
+            return new DefaultOAuth2User(
+                Collections.singleton(new SimpleGrantedAuthority("ROLE_USER")),
 				updatedAttributes,
 				userNameAttributeName
 			);

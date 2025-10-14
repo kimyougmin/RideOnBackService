@@ -64,70 +64,60 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
-                .csrf().disable()
-                .httpBasic().disable()
-                .cors().configurationSource(corsConfigurationSource())
-                .and()
-                .exceptionHandling()
-                .authenticationEntryPoint(restAuthenticationEntryPoint())
-                .and()
-                .sessionManagement().sessionCreationPolicy(SessionCreationPolicy.STATELESS)
-                .and()
+                .csrf(csrf -> csrf.disable())
+                .httpBasic(httpBasic -> httpBasic.disable())
+                .cors(cors -> cors.configurationSource(corsConfigurationSource()))
+                .exceptionHandling(exception ->
+                        exception.authenticationEntryPoint(restAuthenticationEntryPoint())
+                )
+                .sessionManagement(session ->
+                        session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
+                )
                 .authorizeHttpRequests(authz -> authz
-                        // 기본 공개 경로
                         .requestMatchers(
-                                "/",
-                                "/api/oauth2/**",
-                                "/api/auth/**",       // 로그인 관련 모든 경로 (GET, POST 모두 허용)
-                                "/api/users/register", // 회원가입
-                                "/api/users/login",   // 로그인
-                                "/api/test/**",       // 테스트용 API
-                                "/swagger-ui/**",
-                                "/v3/api-docs/**",
-                                "/favicon.ico",
-                                "/error",
-                                "/actuator/**",
-                                "/h2-console/**"      // H2 콘솔 접근 허용
+                                "/", "/api/oauth2/**", "/api/auth/**",
+                                "/api/users/register", "/api/users/login",
+                                "/api/test/**", "/swagger-ui/**", "/v3/api-docs/**",
+                                "/favicon.ico", "/error", "/actuator/**", "/h2-console/**"
                         ).permitAll()
-                        
-                        // GET 메소드 - 인증 없이 접근 가능 (더 구체적인 경로를 먼저 설정)
-                        .requestMatchers(HttpMethod.GET, "/api/news/**").permitAll()            // 뉴스 조회
-                        .requestMatchers(HttpMethod.GET, "/api/posts/**").permitAll()           // 커뮤니티 게시글 조회
-                        .requestMatchers(HttpMethod.GET, "/api/v1/obstacles/**").permitAll()    // 장애물 신고 조회
-                        .requestMatchers(HttpMethod.GET, "/api/network/**").permitAll()         // 네트워크 추적 조회
-                        .requestMatchers(HttpMethod.GET, "/api/riding/**").permitAll()          // 라이딩 기록 조회
-                        .requestMatchers(HttpMethod.GET, "/api/users/**").permitAll()           // 사용자 정보 조회
-                        .requestMatchers(HttpMethod.GET, "/api/questions/**").permitAll()       // 질문 조회
-                        .requestMatchers(HttpMethod.GET, "/api/inquiries/**").permitAll()       // 문의 조회
-                        
-                        // POST/PUT/DELETE 메소드 - 인증 필요
-                        .requestMatchers(HttpMethod.POST, "/api/posts/**").authenticated()      // 게시글 작성
-                        .requestMatchers(HttpMethod.PUT, "/api/posts/**").authenticated()       // 게시글 수정
-                        .requestMatchers(HttpMethod.DELETE, "/api/posts/**").authenticated()    // 게시글 삭제
-                        .requestMatchers(HttpMethod.POST, "/api/v1/obstacles/**").authenticated() // 장애물 신고 작성
-                        .requestMatchers(HttpMethod.PUT, "/api/v1/obstacles/**").authenticated()  // 장애물 신고 수정
-                        .requestMatchers(HttpMethod.DELETE, "/api/v1/obstacles/**").authenticated() // 장애물 신고 삭제
-                        .requestMatchers(HttpMethod.POST, "/api/riding/**").authenticated()     // 라이딩 시작/종료
-                        .requestMatchers(HttpMethod.PUT, "/api/riding/**").authenticated()      // 라이딩 정보 수정
-                        .requestMatchers(HttpMethod.DELETE, "/api/riding/**").authenticated()   // 라이딩 기록 삭제
-                        .requestMatchers(HttpMethod.POST, "/api/questions/**").authenticated()  // 질문 작성
-                        .requestMatchers(HttpMethod.PUT, "/api/questions/**").authenticated()   // 질문 수정
-                        .requestMatchers(HttpMethod.DELETE, "/api/questions/**").authenticated() // 질문 삭제
-                        .requestMatchers(HttpMethod.POST, "/api/inquiries/**").authenticated()  // 문의 작성
-                        .requestMatchers(HttpMethod.PUT, "/api/inquiries/**").authenticated()   // 문의 수정
-                        .requestMatchers(HttpMethod.DELETE, "/api/inquiries/**").authenticated() // 문의 삭제
-                        .requestMatchers(HttpMethod.PUT, "/api/users/**").authenticated()       // 사용자 정보 수정
-                        .requestMatchers(HttpMethod.DELETE, "/api/users/**").authenticated()    // 사용자 삭제
-                        
-                        // 기타 모든 요청은 인증 필요
+
+                        .requestMatchers(HttpMethod.GET, "/api/news/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/posts/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/images/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/v1/obstacles/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/network/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/riding/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/users/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/questions/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/inquiries/**").permitAll()
+
+                        .requestMatchers(HttpMethod.POST, "/api/posts/**").authenticated()
+                        .requestMatchers(HttpMethod.PUT, "/api/posts/**").authenticated()
+                        .requestMatchers(HttpMethod.DELETE, "/api/posts/**").authenticated()
+                        .requestMatchers(HttpMethod.POST, "/api/v1/obstacles/**").authenticated()
+                        .requestMatchers(HttpMethod.PUT, "/api/v1/obstacles/**").authenticated()
+                        .requestMatchers(HttpMethod.DELETE, "/api/v1/obstacles/**").authenticated()
+                        .requestMatchers(HttpMethod.POST, "/api/riding/**").authenticated()
+                        .requestMatchers(HttpMethod.POST, "/api/images").authenticated()
+                        .requestMatchers(HttpMethod.PUT, "/api/riding/**").authenticated()
+                        .requestMatchers(HttpMethod.DELETE, "/api/riding/**").authenticated()
+                        .requestMatchers(HttpMethod.POST, "/api/questions/**").authenticated()
+                        .requestMatchers(HttpMethod.PUT, "/api/questions/**").authenticated()
+                        .requestMatchers(HttpMethod.DELETE, "/api/questions/**").authenticated()
+                        .requestMatchers(HttpMethod.POST, "/api/inquiries/**").authenticated()
+                        .requestMatchers(HttpMethod.PUT, "/api/inquiries/**").authenticated()
+                        .requestMatchers(HttpMethod.DELETE, "/api/inquiries/**").authenticated()
+                        .requestMatchers(HttpMethod.PUT, "/api/users/**").authenticated()
+                        .requestMatchers(HttpMethod.DELETE, "/api/users/**").authenticated()
                         .anyRequest().authenticated()
                 )
-                .addFilterBefore(new JwtAuthenticationFilter(jwtTokenProvider), UsernamePasswordAuthenticationFilter.class)
+                .addFilterBefore(new JwtAuthenticationFilter(jwtTokenProvider),
+                        UsernamePasswordAuthenticationFilter.class)
                 .oauth2Login(oauth2 -> oauth2
-                        .userInfoEndpoint(userInfo -> userInfo
-                                .userService(customOAuth2UserService))
+                        .userInfoEndpoint(userInfo -> userInfo.userService(customOAuth2UserService))
                         .successHandler(oAuth2LoginSuccessHandler)
-                        .failureHandler(oAuth2LoginFailureHandler))
+                        .failureHandler(oAuth2LoginFailureHandler)
+                )
                 .authenticationProvider(authenticationProvider());
 
         return http.build();

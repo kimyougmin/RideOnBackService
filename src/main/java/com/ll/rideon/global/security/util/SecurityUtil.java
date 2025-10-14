@@ -18,7 +18,7 @@ public class SecurityUtil {
         Object principal = authentication.getPrincipal();
         
         if (principal instanceof CustomUserDetails) {
-            return ((CustomUserDetails) principal).getUsers().getId();
+            return ((CustomUserDetails) principal).getMembers().getId();
         }
         
         throw new IllegalStateException("사용자 정보를 찾을 수 없습니다.");
@@ -50,7 +50,7 @@ public class SecurityUtil {
         Object principal = authentication.getPrincipal();
         
         if (principal instanceof CustomUserDetails) {
-            return ((CustomUserDetails) principal).getUsers().getEmail();
+            return ((CustomUserDetails) principal).getMembers().getEmail();
         }
         
         throw new IllegalStateException("사용자 정보를 찾을 수 없습니다.");

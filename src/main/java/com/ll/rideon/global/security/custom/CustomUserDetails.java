@@ -1,9 +1,10 @@
 package com.ll.rideon.global.security.custom;
 
-import com.ll.rideon.domain.users.entity.Users;
 import lombok.Getter;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
+
+import com.ll.rideon.domain.members.entity.Members;
 
 import java.util.Collection;
 import java.util.Collections;
@@ -11,10 +12,10 @@ import java.util.Collections;
 @Getter
 public class CustomUserDetails implements UserDetails {
 
-    private final Users users;
+    private final Members members;
 
-    public CustomUserDetails(Users users) {
-        this.users = users;
+    public CustomUserDetails(Members members) {
+        this.members = members;
     }
 
     @Override
@@ -25,12 +26,12 @@ public class CustomUserDetails implements UserDetails {
 
     @Override
     public String getPassword() {
-        return users.getPassword();
+        return members.getPassword();
     }
 
     @Override
     public String getUsername() {
-        return users.getEmail(); // 이메일을 로그인 ID로 사용
+        return members.getEmail(); // 이메일을 로그인 ID로 사용
     }
 
     @Override

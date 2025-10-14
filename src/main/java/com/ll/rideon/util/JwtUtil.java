@@ -102,7 +102,7 @@ public class JwtUtil {
 
 		return Jwts.builder()
 				.claim("subject", "access")
-				.claim("id", customUserDetails.getUsers().getId())
+				.claim("id", customUserDetails.getMembers().getId())
 				.claim("username", customUserDetails.getUsername())
 				.setIssuedAt(new Date(currentTime))
 				.setExpiration(new Date(currentTime + expiration))
@@ -121,7 +121,7 @@ public class JwtUtil {
 
 		return Jwts.builder()
 				.claim("subject", "refresh")
-				.claim("id", customUserDetails.getUsers().getId())
+				.claim("id", customUserDetails.getMembers().getId())
 				.claim("username", customUserDetails.getUsername())
 				.setIssuedAt(new Date(currentTime))
 				.setExpiration(new Date(currentTime + expiration))

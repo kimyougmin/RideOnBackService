@@ -22,46 +22,43 @@ public class Post {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "user_id", nullable = false)
-    private Long userId;
+    @Column(name = "member_id")
+    private Long memberId;
 
-    @Column(name = "title", nullable = false, length = 100)
+    @Column(name = "title", nullable = false, columnDefinition = "TEXT")
     private String title;
 
-    @Column(name = "content", nullable = false, columnDefinition = "TEXT")
+    @Column(name = "content", columnDefinition = "TEXT")
     private String content;
 
-    @Column(name = "image", nullable = false, length = 500)
-    private String image;
+    
 
-    @Column(name = "view_count", nullable = false)
-    private Integer viewCount;
+    @Column(name = "view_count")
+    private Long viewCount;
 
-    @Column(name = "like_count", nullable = false)
-    private Integer likeCount;
+    @Column(name = "like_count")
+    private Long likeCount;
 
     @CreatedDate
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
     @LastModifiedDate
-    @Column(name = "update_at", nullable = false)
+    @Column(name = "updated_at")
     private LocalDateTime updatedAt;
 
     @Builder
-    public Post(Long userId, String title, String content, String image) {
-        this.userId = userId;
+    public Post(Long memberId, String title, String content) {
+        this.memberId = memberId;
         this.title = title;
         this.content = content;
-        this.image = image;
-        this.viewCount = 0;
-        this.likeCount = 0;
+        this.viewCount = 0L;
+        this.likeCount = 0L;
     }
 
-    public void update(String title, String content, String image) {
+    public void update(String title, String content) {
         this.title = title;
         this.content = content;
-        this.image = image;
     }
 
     public void incrementViewCount() {
