@@ -37,19 +37,19 @@ public class UserService {
         }
 
         // provider가 null이거나 빈 문자열인 경우 기본값으로 'original' 설정
-        String providerValue = dto.getProvider();
-        if (providerValue == null || providerValue.trim().isEmpty()) {
-            providerValue = "original";
-        }
-
-        // 유효한 provider 값인지 확인
-        ProviderType provider;
-        try {
-            provider = ProviderType.valueOf(providerValue);
-        } catch (IllegalArgumentException e) {
-            log.warn("Invalid provider value: {}, using default provider: original", providerValue);
-            provider = ProviderType.original;
-        }
+//        String providerValue = String.valueOf(dto.getProvider());
+//        if (providerValue == null || providerValue.trim().isEmpty()) {
+//            providerValue = "original";
+//        }
+//
+//        // 유효한 provider 값인지 확인
+//        ProviderType provider;
+//        try {
+//            provider = ProviderType.valueOf(providerValue);
+//        } catch (IllegalArgumentException e) {
+//            log.warn("Invalid provider value: {}, using default provider: original", providerValue);
+//            provider = ProviderType.original;
+//        }
 
         Members member = Members.builder()
                 .email(dto.getEmail())
@@ -60,7 +60,7 @@ public class UserService {
                 .birthDate(dto.getBirthDate() != null ? java.time.LocalDate.parse(dto.getBirthDate()) : null)
                 
                 .createdAt(LocalDateTime.now())
-                .provider(provider)
+                .provider(ProviderType.original)
                 .build();
 
         userRepository.save(member);

@@ -1,5 +1,6 @@
 package com.ll.rideon.domain.members.controller;
 
+import com.ll.rideon.domain.members.entity.ProviderType;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -34,9 +35,10 @@ public class UserController {
     @ApiResponse(responseCode = "401", description = "잘못된 자격 증명", content = @Content)
     @PostMapping("/register")
     public ResponseEntity<?> register(@RequestBody UserRegisterDto dto) {
-        log.info("회원가입 시도 - 이메일: {}", dto.getEmail());
+        log.info("회원가입 시도 - 이메일: {}, {}", dto.getEmail(), ProviderType.original);
         
         try {
+
             userService.register(dto);
             log.info("회원가입 성공 - 이메일: {}", dto.getEmail());
             

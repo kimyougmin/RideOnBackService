@@ -94,7 +94,6 @@ public class Members {
     private Double weight;
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
-    @Builder.Default
-    private ProviderType provider = ProviderType.original;
+    @Column(columnDefinition =  "provider_type")
+    private ProviderType provider;
 }

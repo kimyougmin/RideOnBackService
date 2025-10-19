@@ -76,7 +76,7 @@ public class SecurityConfig {
                 .authorizeHttpRequests(authz -> authz
                         .requestMatchers(
                                 "/", "/api/oauth2/**", "/api/auth/**",
-                                "/api/users/register", "/api/users/login",
+                                "/api/users/register", "/api/users/login", "/api/users/register",
                                 "/api/test/**", "/swagger-ui/**", "/v3/api-docs/**",
                                 "/favicon.ico", "/error", "/actuator/**", "/h2-console/**"
                         ).permitAll()
@@ -87,7 +87,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/api/v1/obstacles/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/network/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/riding/**").permitAll()
-                        .requestMatchers(HttpMethod.GET, "/api/users/**").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/user/register").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/questions/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/inquiries/**").permitAll()
 
@@ -107,8 +107,10 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.POST, "/api/inquiries/**").authenticated()
                         .requestMatchers(HttpMethod.PUT, "/api/inquiries/**").authenticated()
                         .requestMatchers(HttpMethod.DELETE, "/api/inquiries/**").authenticated()
+                        .requestMatchers(HttpMethod.POST, "/api/users/**").permitAll()
                         .requestMatchers(HttpMethod.PUT, "/api/users/**").authenticated()
                         .requestMatchers(HttpMethod.DELETE, "/api/users/**").authenticated()
+                        .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                         .anyRequest().authenticated()
                 )
                 .addFilterBefore(new JwtAuthenticationFilter(jwtTokenProvider),
@@ -145,31 +147,26 @@ public class SecurityConfig {
 
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
-        CorsConfiguration configuration = new CorsConfiguration();
+        CorsConfiguration configuration = getCorsConfiguration();
 
-        configuration.setAllowedMethods(
-                Arrays.asList("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS")
-        );
-
-        configuration.setAllowedOrigins(
-                List.of(
-                        "http://localhost:8080",
-                        "http://localhost:3000",
-                        "http://211.197.178.97:11200",
-                        "https://211.197.178.97:11200",
-                        "http://www.rideon.kro.kr",
-                        "https://www.rideon.kro.kr"
-                )
-        );
-
-        configuration.setAllowCredentials(true);
+        configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(List.of("*"));
-        configuration.setExposedHeaders(
-                Arrays.asList("Authorization", "Set-Cookie", "Access-Control-Allow-Credentials"));
+        configuration.setAllowCredentials(true);
+        configuration.setExposedHeaders(List.of("Authorization", "Set-Cookie", "Access-Control-Allow-Credentials"));
 
-        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource(); // ✅ reactive 아님
+        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", configuration);
-
         return source;
+    }
+
+    private static CorsConfiguration getCorsConfiguration() {
+        CorsConfiguration configuration = new CorsConfiguration();
+        configuration.addAllowedOriginPattern("http://localhost:3000");
+        configuration.addAllowedOriginPattern("http://localhost:8080");
+        configuration.addAllowedOriginPattern("http://www.rideon.kro.kr");
+        configuration.addAllowedOriginPattern("https://www.rideon.kro.kr");
+        configuration.addAllowedOriginPattern("http://211.197.178.97:11200");
+        configuration.addAllowedOriginPattern("https://211.197.178.97:11200");
+        return configuration;
     }
 }

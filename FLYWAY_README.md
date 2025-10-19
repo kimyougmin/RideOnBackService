@@ -30,7 +30,7 @@ JPA의 `ddl-auto`를 `validate`로 변경하여 Flyway가 스키마를 관리하
 초기 데이터베이스 스키마를 생성하는 마이그레이션 파일입니다.
 
 포함된 테이블들:
-- `users` - 사용자 정보
+- `members` - 사용자 정보
 - `posts` - 게시글
 - `post_like` - 게시글 좋아요
 - `category` - 카테고리
