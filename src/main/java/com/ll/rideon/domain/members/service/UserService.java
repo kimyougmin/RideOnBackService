@@ -14,6 +14,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.io.File;
 import java.io.IOException;
 import java.time.LocalDateTime;
 import java.util.UUID;
@@ -127,20 +128,21 @@ public class UserService {
     /**
      * 사용자 프로필 이미지 업데이트 (URL)
      */
-    public UserProfileImageUpdateDto updateProfileImage(Long userId, String imageUrl) {
+    public String uploadProfileImage(Long userId, MultipartFile file) throws IOException {
+        log.info("userId: {}, dto: {}", userId, file);
         Members members = userRepository.findById(userId)
                 .orElseThrow(() -> new UsernameNotFoundException("사용자를 찾을 수 없습니다."));
 
-        // 프로필 이미지 업데이트
+        String fileName = "profile_" + userId + "_" + System.currentTimeMillis() + ".webp";
+        String uploadDir = "/path/to/upload/"; // 로컬 또는 S3 경로
+        File dest = new File(uploadDir + fileName);
+        file.transferTo(dest);
+
+        String imageUrl = "https://rideon.kro.kr/profile/" + fileName;
         members.setProfileImage(imageUrl);
         userRepository.save(members);
-        
-        log.info("User profile image updated successfully: {}", members.getEmail());
 
-        return UserProfileImageUpdateDto.builder()
-                .profileImageUrl(imageUrl)
-                .message("프로필 이미지가 성공적으로 업데이트되었습니다.")
-                .build();
+        return imageUrl;
     }
 
 

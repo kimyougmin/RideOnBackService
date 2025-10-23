@@ -7,6 +7,7 @@ import io.jsonwebtoken.security.Keys;
 import jakarta.annotation.PostConstruct;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -18,12 +19,16 @@ import java.util.Base64;
 import java.util.Date;
 
 
+@Slf4j
 @Component
 @RequiredArgsConstructor
 public class JwtTokenProvider {
 
     @Value("${jwt.secret}")
     private String secretKey;
+
+    @Value("${jwt.expiration}")
+    private long validityInMilliseconds;
 
     private Key key;
 
@@ -48,8 +53,8 @@ public class JwtTokenProvider {
 
         return Jwts.builder()
                 .setId(String.valueOf(id))
-                .setSubject(email)
-                .claim("userId", userId)
+                .setSubject(userId)
+                .claim("name", email)
                 .claim("tokenType", "ACCESS")
                 .setIssuedAt(now)
                 .setExpiration(validity)
@@ -75,12 +80,36 @@ public class JwtTokenProvider {
 
     // 기존 메서드 (하위 호환성을 위해 유지)
     public String createToken(String email, Long id, String userId) {
-        return createAccessToken(email, id, userId);
+        Claims claims = Jwts.claims().setSubject(email);
+        claims.put("userId", userId);
+        Date now = new Date();
+        return Jwts.builder()
+                .setClaims(claims)
+                .setIssuedAt(now)
+                .setExpiration(new Date(now.getTime() + validityInMilliseconds))
+                .signWith(SignatureAlgorithm.HS256, secretKey)
+                .compact();
     }
 
     public Authentication getAuthentication(String token) {
-        UserDetails userDetails = userDetailsService.loadUserByUsername(getEmailFromToken(token));
-        return new UsernamePasswordAuthenticationToken(userDetails, "", userDetails.getAuthorities());
+        Claims claims = getClaims(token);
+        Long userId = claims.get("userId", Long.class);
+        String email = claims.getSubject();
+
+        UserDetails userDetails = userDetailsService.loadUserByUsername(email);
+        return new UsernamePasswordAuthenticationToken(userId, "", userDetails.getAuthorities());
+    }
+    public Claims getClaims(String token) {
+        try {
+            return Jwts.parserBuilder()
+                    .setSigningKey(key)
+                    .build()
+                    .parseClaimsJws(token)
+                    .getBody();
+        } catch (JwtException | IllegalArgumentException e) {
+            log.error("❌ Invalid JWT token: {}", e.getMessage());
+            throw new RuntimeException("Invalid JWT token");
+        }
     }
 
     public String getEmailFromToken(String token) {

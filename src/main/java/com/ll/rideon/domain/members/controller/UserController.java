@@ -93,21 +93,24 @@ public class UserController {
     @ApiResponse(responseCode = "200", description = "프로필 이미지 업데이트 성공")
     @ApiResponse(responseCode = "401", description = "인증되지 않은 사용자", content = @Content)
     @ApiResponse(responseCode = "404", description = "사용자를 찾을 수 없음", content = @Content)
-    @PutMapping("/profile/image/url")
-    public ResponseEntity<UserProfileImageUpdateDto> updateProfileImageUrl(@RequestParam("imageUrl") String imageUrl) {
+    @PostMapping("/profile/image")
+    public ResponseEntity<UserProfileImageUpdateDto> updateProfileImage(
+            @RequestParam("file") MultipartFile file) throws IOException {
+
+        log.info("image start");
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         Long userId = Long.parseLong(authentication.getName());
-        
-        log.info("프로필 이미지 URL 업데이트 시도 - 사용자 ID: {}", userId);
-        
-        try {
-            UserProfileImageUpdateDto response = userService.updateProfileImage(userId, imageUrl);
-            log.info("프로필 이미지 URL 업데이트 성공 - 사용자 ID: {}", userId);
-            return ResponseEntity.ok(response);
-        } catch (Exception e) {
-            log.error("프로필 이미지 URL 업데이트 실패 - 사용자 ID: {}, 오류: {}", userId, e.getMessage(), e);
-            throw e;
-        }
+
+        log.info("프로필 이미지 업로드 시도 - 사용자 ID: {}", userId);
+
+        String imageUrl = userService.uploadProfileImage(userId, file);
+
+        return ResponseEntity.ok(
+                UserProfileImageUpdateDto.builder()
+                        .profileImageUrl(imageUrl)
+                        .message("프로필 이미지가 성공적으로 업데이트되었습니다.")
+                        .build()
+        );
     }
 
     @Operation(summary = "프로필 이미지 업데이트 (파일 업로드)", description = "로그인한 사용자의 프로필 이미지 파일을 업로드하여 업데이트합니다.")
